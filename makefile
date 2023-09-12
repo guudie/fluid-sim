@@ -21,8 +21,8 @@ subdirs:
 renderer.o: renderer.h renderer.cpp
 	$(GCC) $(ARGS) -c renderer.cpp -o renderer.o
 
-main.o: main.cpp renderer.h implicitEuler.h ./ODE_solvers/ODESolver.h
+main.o: main.cpp renderer.h ./ODE_solvers/implicitEuler.h ./ODE_solvers/ODESolver.h
 	$(GCC) $(ARGS) -c main.cpp -o main.o
 
-app: main.o
+app: main.o renderer.o ./ODE_solvers/ode_joined.o
 	$(GCC) -o $@ $^ $(CFLAGS)

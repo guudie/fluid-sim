@@ -54,3 +54,41 @@ void renderer::drawPoint(glm::vec2 p, Uint32 color) const {
     SDL_SetRenderDrawColor(ren, color >> 16, color >> 8, color, 255);
     SDL_RenderDrawPoint(ren, p.x, p.y);
 }
+
+void renderer::drawCircle(glm::vec2 center, float radius, Uint32 color) const {
+    int centerX = center.x;
+    int centerY = center.y;
+    const int diameter = radius * 2;
+    int x = radius - 1;
+    int y = 0;
+    int tx = 1;
+    int ty = 1;
+    int error = tx - diameter;
+
+    SDL_SetRenderDrawColor(ren, color >> 16, color >> 8, color, 255);
+    while (x >= y)
+    {
+        SDL_RenderDrawPoint(ren, centerX + x, centerY - y);
+        SDL_RenderDrawPoint(ren, centerX + x, centerY + y);
+        SDL_RenderDrawPoint(ren, centerX - x, centerY - y);
+        SDL_RenderDrawPoint(ren, centerX - x, centerY + y);
+        SDL_RenderDrawPoint(ren, centerX + y, centerY - x);
+        SDL_RenderDrawPoint(ren, centerX + y, centerY + x);
+        SDL_RenderDrawPoint(ren, centerX - y, centerY - x);
+        SDL_RenderDrawPoint(ren, centerX - y, centerY + x);
+
+        if (error <= 0)
+        {
+            ++y;
+            error += ty;
+            ty += 2;
+        }
+
+        if (error > 0)
+        {
+            --x;
+            tx += 2;
+            error += tx - diameter;
+        }
+    }
+}
