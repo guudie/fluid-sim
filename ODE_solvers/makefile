@@ -18,5 +18,8 @@ velocityVerlet.o: ODESolver.h velocityVerlet.h velocityVerlet.cpp
 verlet.o: ODESolver.h verlet.h verlet.cpp
 	$(GCC) $(ARGS) -c verlet.cpp -o verlet.o
 
-ode_joined.o: ODESolver.o velocityVerlet.o
-	$(LD) $(LDFLAGS) ODESolver.o velocityVerlet.o -o ode_joined.o
+implicitEuler.o: ODESolver.h implicitEuler.h implicitEuler.cpp
+	$(GCC) $(ARGS) -c implicitEuler.cpp -o implicitEuler.o
+
+ode_joined.o: ODESolver.o velocityVerlet.o verlet.o implicitEuler.o
+	$(LD) $(LDFLAGS) -o $@ $^
