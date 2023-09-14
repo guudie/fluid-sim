@@ -15,6 +15,6 @@ void implicitEuler::integrateStep1(glm::vec2& y, glm::vec2& z, glm::vec2 zdash, 
     z += g_func(t, y, z, zdash) * dt;
 }
 
-void implicitEuler::integrateStep2(glm::vec2& y, glm::vec2 z, float dt, float t = 0) {
+void implicitEuler::integrateStep2(glm::vec2& y, glm::vec2 z, float dt, float t) {
     y += z * dt;
 }
