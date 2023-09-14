@@ -7,6 +7,7 @@ struct point {
     glm::vec2 pos;
     glm::vec2 vel;
     glm::vec2 acc;
+    glm::ivec2 gridIdx;
     bool locked;
 };
 
