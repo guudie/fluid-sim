@@ -8,6 +8,8 @@ struct point {
     glm::vec2 vel;
     glm::vec2 acc;
     glm::ivec2 gridIdx;
+    float density;
+    float pressure;
     bool locked;
 };
 
@@ -17,21 +19,22 @@ struct segment {
 };
 
 inline void resolveOutOfBounds(point& p, int w, int h) {
+    float bounceCoeff = -0.4f;
     if(p.pos.x > w) {
         p.pos.x = w;
-        p.vel.x *= -0.8f;
+        p.vel.x *= bounceCoeff;
     }
     if(p.pos.x < 0){
         p.pos.x = 0;
-        p.vel.x *= -0.8f;
+        p.vel.x *= bounceCoeff;
     }
     if(p.pos.y > h - 10) {
         p.pos.y = h - 10;
-        p.vel.y *= -0.8f;
+        p.vel.y *= bounceCoeff;
     }
     if(p.pos.y < 0) {
         p.pos.y = 0;
-        p.vel.y *= -0.8f;
+        p.vel.y *= bounceCoeff;
     }
 }
 
