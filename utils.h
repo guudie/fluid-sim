@@ -19,7 +19,7 @@ struct segment {
 };
 
 inline void resolveOutOfBounds(point& p, int w, int h) {
-    float bounceCoeff = -0.4f;
+    float bounceCoeff = -0.0f;
     if(p.pos.x > w) {
         p.pos.x = w;
         p.vel.x *= bounceCoeff;
