@@ -177,21 +177,21 @@ int main() {
                 capVelocity(p->vel, 20.0f);
 
                 // calculate and constrain position
-                glm::vec2 prevPos = p->pos;
-                _integrator.integrateStep2(p->pos, p->vel, 1);
-                for(int r = std::max(0, p->gridIdx.y - 1); r <= std::min(gridDimY - 1, p->gridIdx.y + 1); r++) {
-                    for(int c = std::max(0, p->gridIdx.x - 1); c <= std::min(gridDimX - 1, p->gridIdx.x + 1); c++) {
-                        for(auto& q : grid[r][c]) {
-                            if(q == p)
-                                continue;
-                            if(glm::length(q->pos - p->pos) < 8) {
-                                p->pos = prevPos;
-                                goto skip_loop;
-                            }
-                        }
-                    }
-                }
-skip_loop:
+//                 glm::vec2 prevPos = p->pos;
+//                 _integrator.integrateStep2(p->pos, p->vel, 1);
+//                 for(int r = std::max(0, p->gridIdx.y - 1); r <= std::min(gridDimY - 1, p->gridIdx.y + 1); r++) {
+//                     for(int c = std::max(0, p->gridIdx.x - 1); c <= std::min(gridDimX - 1, p->gridIdx.x + 1); c++) {
+//                         for(auto& q : grid[r][c]) {
+//                             if(q == p)
+//                                 continue;
+//                             if(glm::length(q->pos - p->pos) < 8) {
+//                                 p->pos = prevPos;
+//                                 goto skip_loop;
+//                             }
+//                         }
+//                     }
+//                 }
+// skip_loop:
                 resolveOutOfBounds(*p, width, height);
 
                 if(isnan(p->pos.x) || isnan(p->pos.y)) {
