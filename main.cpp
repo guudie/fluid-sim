@@ -7,11 +7,12 @@
 #include <SDL2/SDL.h>
 #include "ODE_solvers/implicitEuler.h"
 #include "renderer.h"
+#include "mouse.h"
 #include "utils.h"
 
 #define PI 3.14159265359
 
-inline static void handleInput(bool& running) {
+inline static void handleInput(bool& running, mouse* _mouse) {
     SDL_Event event;
     int x, y;
     while(SDL_PollEvent(&event)) {
@@ -23,6 +24,41 @@ inline static void handleInput(bool& running) {
             if(event.key.keysym.sym == SDLK_ESCAPE)
                 running = false;
             break;
+        case SDL_MOUSEMOTION:
+            x = event.motion.x;
+            y = event.motion.y;
+            _mouse->updatePos(x, y);
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            SDL_GetMouseState(&x, &y);
+            _mouse->updatePos(x, y);
+            if (!_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) 
+            {
+                _mouse->setLB(true);
+            }
+            if (!_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) 
+            {
+                _mouse->setRB(true);
+            }
+            if (!_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) 
+            {
+                _mouse->setSBX2(true);
+            }
+            break;
+        case SDL_MOUSEBUTTONUP: 
+            if (_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT)
+            {
+                _mouse->setLB(false);
+            }
+            if (_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT)
+            {
+                _mouse->setRB(false);
+            }
+            if (_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) 
+            {
+                _mouse->setSBX2(false);
+            }
+            break;
         }
     }
 }
@@ -32,7 +68,7 @@ void generateParticles(std::vector<point*>& points, std::unordered_set<point*> g
         for(int c = from.x; c < to.x; c += dist) {
             point* p = new point {
                 { c, r },
-                { rand() % 11, 0 },
+                { rand() % 1, 0 },
                 { 0, 0 },
                 { c / cellSize, r / cellSize },
                 0.0f,
@@ -61,6 +97,8 @@ int main() {
     bool running = _renderer->setup(width, height);
     float dt = 1.0f;
 
+    mouse* _mouse = new mouse();
+
     const int cellSize = 32;
     const int gridDimX = (width + 1) / cellSize;
     const int gridDimY = (height + 1) / cellSize;
@@ -74,14 +112,14 @@ int main() {
 
     generateParticles(points, grid, tl, br, dist, cellSize);
 
-    glm::vec2 G(0, 0.5f);
+    glm::vec2 G(0, 0.0f);
 
     implicitEuler _integrator([=](float t, glm::vec2 y, glm::vec2 z, glm::vec2 zdash) -> glm::vec2 {
         return zdash + G;
     });
 
-    const float K = 250;
-    const float h = 1;
+    const float K = 200;
+    const float h = 4;
     const float h2 = h * h;
     const float h3 = h2 * h;
     const float h6 = pow(h, 6);
@@ -97,7 +135,7 @@ int main() {
     while(running) {
         Uint32 curTime = SDL_GetTicks();
         if(curTime - lastUpd >= 16) {
-            handleInput(running);
+            handleInput(running, _mouse);
 
             _renderer->clearScreen(0xFF000816);
 
@@ -155,7 +193,7 @@ int main() {
                                         // const float W_lap = -(r3 / (2 * h3)) + (r2 / h2) + (h / (2 * r)) - 1;
                                         const float W_lap = viscosity_lap_constant * (h - r);
                                         p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
-                                        // p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
+                                        p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
                                     }
                                 }
                             }
@@ -174,6 +212,11 @@ int main() {
                 // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
                 // calculate velocity
+                if(_mouse->getLB()) {
+                    glm::vec2 toMouse = _mouse->getPos() - p->pos;
+                    if(glm::dot(toMouse, toMouse) < 32 * 32)
+                        p->vel += 0.01f * _mouse->getDiff();
+                }
                 _integrator.integrateStep1(p->pos, p->vel, p->acc, dt);
                 capVelocity(p->vel, 20.0f);
 
@@ -297,9 +340,12 @@ skip_loop:
         }
     }
 
-    std::cout << "Quit program" << std::endl;
-
+    for(auto& p : points)
+        delete p;
     delete _renderer;
+    delete _mouse;
+
+    std::cout << "Quit program" << std::endl;
 
     return 0;
 }

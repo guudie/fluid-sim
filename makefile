@@ -10,7 +10,7 @@ GCC = g++
 
 CFLAGS = -O2 -Wall -mconsole -lm `sdl2-config --libs --cflags`
 
-all: subdirs renderer.o main.o app$(EXT)
+all: subdirs renderer.o mouse.o main.o app$(EXT)
 clean:
 	-rm *.o *.exe; \
 	for dir in $(SUBDIRS); do \
@@ -25,8 +25,11 @@ subdirs:
 renderer.o: renderer.h renderer.cpp
 	$(GCC) $(ARGS) -c renderer.cpp -o renderer.o
 
-main.o: main.cpp renderer.h utils.h ./ODE_solvers/implicitEuler.h ./ODE_solvers/ODESolver.h
+mouse.o: mouse.h mouse.cpp
+	$(GCC) $(ARGS) -c mouse.cpp -o mouse.o
+
+main.o: main.cpp renderer.h mouse.h utils.h ./ODE_solvers/implicitEuler.h ./ODE_solvers/ODESolver.h
 	$(GCC) $(ARGS) -c main.cpp -o main.o
 
-app$(EXT): main.o renderer.o ./ODE_solvers/ode_joined.o
+app$(EXT): main.o renderer.o mouse.o ./ODE_solvers/ode_joined.o
 	$(GCC) -o $@ $^ $(CFLAGS)
