@@ -32,7 +32,7 @@ void generateParticles(std::vector<point*>& points, std::unordered_set<point*> g
         for(int c = from.x; c < to.x; c += dist) {
             point* p = new point {
                 { c, r },
-                { rand() % 1, 0 },
+                { rand() % 11, 0 },
                 { 0, 0 },
                 { c / cellSize, r / cellSize },
                 0.0f,
@@ -59,6 +59,7 @@ int main() {
     const int width = 511, height = 511;
     renderer* _renderer = new renderer();
     bool running = _renderer->setup(width, height);
+    float dt = 1.0f;
 
     const int cellSize = 32;
     const int gridDimX = (width + 1) / cellSize;
@@ -69,7 +70,7 @@ int main() {
     glm::ivec2 tl(50, 50);
     glm::ivec2 br(200, 200);
     float radius = 4.0f;
-    float dist = 8;
+    float dist = 6;
 
     generateParticles(points, grid, tl, br, dist, cellSize);
 
@@ -79,14 +80,14 @@ int main() {
         return zdash + G;
     });
 
-    const float K = 3;
-    const float h = 8;
+    const float K = 250;
+    const float h = 1;
     const float h2 = h * h;
     const float h3 = h2 * h;
     const float h6 = pow(h, 6);
     const float p0 = 1;
     const float e = 0.1f;
-    const float poly6_constant = 315.0f / (64.0f * PI * pow(h, 6));
+    const float poly6_constant = 315.0f / (64.0f * PI * pow(h, 9));
     const float spiky_constant = -45 / (PI * h6);
     const float viscosity_lap_constant = 45 / (PI * h6);
 
@@ -139,26 +140,26 @@ int main() {
                 for(int c = 0; c < gridDimX; c++) {
                     for(auto& p : grid[r][c]) {
                         p->acc = { 0, 0 };
-                        // for(int ir = std::max(0, r - 1); ir <= std::min(gridDimY - 1, r + 1); ir++) {
-                        //     for(int ic = std::max(0, c - 1); ic <= std::min(gridDimX - 1, c + 1); ic++) {
-                        //         for(auto& q : grid[ir][ic]) {
-                        //             if(q == p)
-                        //                 continue;
-                        //             const glm::vec2 diff = p->pos - q->pos;
-                        //             const float r2 = glm::dot(diff, diff);
-                        //             const float r = sqrt(r2);
-                        //             const float r3 = r * r2;
+                        for(int ir = std::max(0, r - 1); ir <= std::min(gridDimY - 1, r + 1); ir++) {
+                            for(int ic = std::max(0, c - 1); ic <= std::min(gridDimX - 1, c + 1); ic++) {
+                                for(auto& q : grid[ir][ic]) {
+                                    if(q == p)
+                                        continue;
+                                    const glm::vec2 diff = p->pos - q->pos;
+                                    const float r2 = glm::dot(diff, diff);
+                                    const float r = sqrt(r2);
+                                    const float r3 = r * r2;
 
-                        //             if(r > 1e-3 && r < h) {
-                        //                 const float W_spiky = spiky_constant * (h - r) * (h - r);
-                        //                 // const float W_lap = -(r3 / (2 * h3)) + (r2 / h2) + (h / (2 * r)) - 1;
-                        //                 const float W_lap = viscosity_lap_constant * (h - r);
-                        //                 p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
-                        //                 // p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
-                        //             }
-                        //         }
-                        //     }
-                        // }
+                                    if(r > 1e-3 && r < h) {
+                                        const float W_spiky = spiky_constant * (h - r) * (h - r);
+                                        // const float W_lap = -(r3 / (2 * h3)) + (r2 / h2) + (h / (2 * r)) - 1;
+                                        const float W_lap = viscosity_lap_constant * (h - r);
+                                        p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
+                                        // p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
+                                    }
+                                }
+                            }
+                        }
                         if(isnan(p->acc.x) || isnan(p->acc.y)) {
                             std::cout << "nan encountered in acc";
                             return 0;
@@ -170,28 +171,57 @@ int main() {
 
             // integrate movements
             for(auto& p : points) {
-                // _integrator.integrate(p->pos, p->vel, p->acc, 1);
+                // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
                 // calculate velocity
-                _integrator.integrateStep1(p->pos, p->vel, p->acc, 1);
+                _integrator.integrateStep1(p->pos, p->vel, p->acc, dt);
                 capVelocity(p->vel, 20.0f);
 
                 // calculate and constrain position
-//                 glm::vec2 prevPos = p->pos;
-//                 _integrator.integrateStep2(p->pos, p->vel, 1);
-//                 for(int r = std::max(0, p->gridIdx.y - 1); r <= std::min(gridDimY - 1, p->gridIdx.y + 1); r++) {
-//                     for(int c = std::max(0, p->gridIdx.x - 1); c <= std::min(gridDimX - 1, p->gridIdx.x + 1); c++) {
-//                         for(auto& q : grid[r][c]) {
-//                             if(q == p)
-//                                 continue;
-//                             if(glm::length(q->pos - p->pos) < 8) {
-//                                 p->pos = prevPos;
-//                                 goto skip_loop;
-//                             }
-//                         }
-//                     }
-//                 }
-// skip_loop:
+                // glm::vec2 leftPos = p->pos;
+                // glm::vec2 rightPos = p->pos + p->vel * dt;
+                // glm::vec2 potentialPos = leftPos;
+                // point* collidedParticle = nullptr;
+                // for(int r = std::max(0, p->gridIdx.y - 1); r <= std::min(gridDimY - 1, p->gridIdx.y + 1); r++) {
+                //     for(int c = std::max(0, p->gridIdx.x - 1); c <= std::min(gridDimX - 1, p->gridIdx.x + 1); c++) {
+                //         for(auto& q : grid[r][c]) {
+                //             if(q == p)
+                //                 continue;
+                //             if(glm::dot(q->pos - rightPos, q->pos - rightPos) < 64) {
+                //                 float l = 0.0f, r = 1.0f;
+                //                 float m = 0.0f, pm = 0.0f;
+                //                 for(int i = 0; i < 5; i++) {
+                //                     m = (l + r) / 2.0f;
+                //                     rightPos = leftPos + m * p->vel * dt;
+                //                     if(glm::dot(q->pos - rightPos, q->pos - rightPos) < 64) {
+                //                         r = m;
+                //                     } else {
+                //                         l = m;
+                //                         pm = m;
+                //                         potentialPos = rightPos;
+                //                     }
+                //                 }
+                //                 if(potentialPos == leftPos) {
+                //                     p->vel = { 0, 0 };
+                //                     goto skip_loop;
+                //                 }
+                //                 p->vel *= pm;
+                //                 rightPos = potentialPos;
+                //                 potentialPos = leftPos;
+                //             }
+                //             if(glm::dot(q->pos - rightPos, q->pos - rightPos) - 64 < 1e-2) {
+                //                 collidedParticle = q;
+                //             }
+                //         }
+                //     }
+                // }
+                // if(collidedParticle != nullptr) {
+                //     glm::vec2 tmp = p->vel;
+                //     p->vel = 0.5f * (tmp + collidedParticle->vel);
+                //     collidedParticle->vel = 0.5f * (tmp + collidedParticle->vel);
+                // }
+skip_loop:
+                _integrator.integrateStep2(p->pos, p->vel, dt);
                 resolveOutOfBounds(*p, width, height);
 
                 if(isnan(p->pos.x) || isnan(p->pos.y)) {
