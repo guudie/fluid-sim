@@ -21,7 +21,7 @@ bool renderer::setup(int w, int h) {
         return false;
     }
 
-    window = SDL_CreateWindow("cloth sim", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
+    window = SDL_CreateWindow("water sim", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowWidth, windowHeight, 0);
     if(!window) {
         std::cerr << "Error initializing window" << std::endl;
         return false;
