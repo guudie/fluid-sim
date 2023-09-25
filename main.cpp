@@ -81,14 +81,14 @@ void generateParticles(std::vector<point*>& points, std::unordered_set<point*> g
     }
 }
 
-inline static void capVelocity(glm::vec2& vel, float maxVel) {
-    float len = glm::length(vel);
+inline static void capMagnitude(glm::vec2& v, float maxMag) {
+    float len = glm::length(v);
     if(len < 1e-6) {
-        vel = { 0, 0 };
+        v = { 0, 0 };
         return;
     }
-    if(len > maxVel)
-        vel *= maxVel / len;
+    if(len > maxMag)
+        v *= maxMag / len;
 }
 
 int main() {
@@ -112,20 +112,20 @@ int main() {
 
     generateParticles(points, grid, tl, br, dist, cellSize);
 
-    glm::vec2 G(0, 0.0f);
+    glm::vec2 G(0, 0.01f);
 
     implicitEuler _integrator([=](float t, glm::vec2 y, glm::vec2 z, glm::vec2 zdash) -> glm::vec2 {
         return zdash + G;
     });
 
-    const float K = 200;
-    const float h = 4;
+    const float K = 250;
+    const float h = 8;
     const float h2 = h * h;
     const float h3 = h2 * h;
-    const float h6 = pow(h, 6);
+    const float h6 = pow(h, 0);
     const float p0 = 1;
     const float e = 0.1f;
-    const float poly6_constant = 315.0f / (64.0f * PI * pow(h, 9));
+    const float poly6_constant = 315.0f / (64.0f * PI * pow(h, 0));
     const float spiky_constant = -45 / (PI * h6);
     const float viscosity_lap_constant = 45 / (PI * h6);
 
@@ -202,7 +202,7 @@ int main() {
                             std::cout << "nan encountered in acc";
                             return 0;
                         }
-                        // p->acc /= p->density;
+                        // capMagnitude(p->acc, 0.5f);
                     }
                 }
             }
@@ -218,7 +218,7 @@ int main() {
                         p->vel += 0.01f * _mouse->getDiff();
                 }
                 _integrator.integrateStep1(p->pos, p->vel, p->acc, dt);
-                capVelocity(p->vel, 20.0f);
+                capMagnitude(p->vel, 0.5f);
 
                 // calculate and constrain position
                 // glm::vec2 leftPos = p->pos;
