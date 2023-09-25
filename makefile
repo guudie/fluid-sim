@@ -8,7 +8,7 @@ SUBDIRS = ODE_solvers
 ARGS = -O2
 GCC = g++
 
-CFLAGS = -O2 -Wall -mconsole -lm `sdl2-config --libs --cflags`
+CFLAGS = -O2 -Wall -mconsole -lm -lmingw32 -lSDL2main -lSDL2
 
 all: subdirs renderer.o mouse.o main.o app$(EXT)
 clean:
