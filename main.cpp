@@ -214,7 +214,7 @@ int main() {
                             //     const float r = sqrt(r2);
                             //     if(r > 1e-3 && r < h) {
                             //         const float W_spiky = spiky_constant * (h - r) * (h - r);
-                            //         p->acc -= p->pressure / (2.0f * p->density * 16.0f) * W_spiky * (diff / r);
+                            //         p->acc -= p->pressure / (2.0f * p->density * 1.0f) * W_spiky * (diff / r);
                             //     }
                             // }
                             if(isnan(p->acc.x) || isnan(p->acc.y)) {
