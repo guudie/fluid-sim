@@ -1,6 +1,5 @@
 #pragma once
 #include <functional>
-#include <glm/glm.hpp>
 #include "ODESolver.h"
 
 class verlet : ODESolver {

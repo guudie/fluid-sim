@@ -1,7 +1,7 @@
 #pragma once
-#include <glm/glm.hpp>
 #include <fstream>
 #include <vector>
+#include "glm/glm.hpp"
 
 struct point {
     glm::vec2 pos;
