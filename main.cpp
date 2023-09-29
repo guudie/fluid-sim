@@ -94,7 +94,8 @@ inline static void capMagnitude(glm::vec2& v, float maxMag) {
 
 int main() {
     const int width = 511, height = 511;
-    std::string generalconfig = "config/general.cfg";
+    std::string configPath = "config/general.cfg";
+    std::string utilsConfigPath = "config/utils.cfg";
 
     renderer* _renderer = new renderer();
     bool running = _renderer->setup(width, height);
@@ -103,17 +104,17 @@ int main() {
 
     libconfig::Config cfg;
     try {
-        cfg.readFile(generalconfig);
+        cfg.readFile(configPath);
     }
     catch(const libconfig::FileIOException &fioex)
     {
         std::cerr << "I/O error while reading file." << std::endl;
-        return(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
     catch(const libconfig::ParseException &pex)
     {
         std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError() << std::endl;
-        return(EXIT_FAILURE);
+        return EXIT_FAILURE;
     }
 
     float dt = cfg.lookup("dt");
@@ -122,8 +123,8 @@ int main() {
     G.y = cfg.lookup("gravity.y");
 
     const int num_iterations = cfg.lookup("num_iterations");
-    const float K = cfg.lookup("K_coeff");
-    const float h = 8;
+    const float K = cfg.lookup("K");
+    const float h = cfg.lookup("h");
     const float h2 = h * h;
     const float h6 = pow(h, 0);
     const float p0 = cfg.lookup("p0");
@@ -137,6 +138,8 @@ int main() {
     const float max_vel = cfg.lookup("max_vel");
     const float max_acc = cfg.lookup("max_acc");
 
+    const float mouse_coeff = cfg.lookup("mouse_coeff");
+
     const int cellSize = 16;
     const int gridDimX = (width + 1) / cellSize;
     const int gridDimY = (height + 1) / cellSize;
@@ -146,17 +149,17 @@ int main() {
     glm::ivec2 tl(50, 50);
     glm::ivec2 br(125, 200);
     float radius = 4.0f;
-    float dist = 7;
+    float dist = 7.0f;
 
     generateParticles(points, grid, tl, br, dist, cellSize);
 
-    tl = { 300, 50 };
-    br = { 375, 200 };
+    tl = { 350, 50 };
+    br = { 425, 200 };
     generateParticles(points, grid, tl, br, dist, cellSize);
 
-    tl = { 250, 50 };
-    br = { 325, 200 };
-    bool once = false;
+    tl = { 200, 150 };
+    br = { 350, 225 };
+    int cnt = 0;
 
     implicitEuler _integrator([=](float t, glm::vec2 y, glm::vec2 z, glm::vec2 zdash) -> glm::vec2 {
         return zdash + G;
@@ -167,9 +170,10 @@ int main() {
         Uint32 curTime = SDL_GetTicks();
         if(curTime - lastUpd >= 16) {
             handleInput(running, _mouse);
-            if(_mouse->getRB() && !once) {
-                generateParticles(points, grid, tl, br, dist, cellSize);
-                once = true;
+            if(_mouse->getRB() && cnt < 6) {
+                generateParticles(points, grid, tl, br, h, cellSize);
+                _mouse->setRB(false);
+                cnt++;
             }
 
             _renderer->clearScreen(0xFF000816);
@@ -238,7 +242,7 @@ int main() {
                             //     const float r = sqrt(r2);
                             //     if(r > 1e-3 && r < h) {
                             //         const float W_spiky = spiky_constant * (h - r) * (h - r);
-                            //         p->acc -= p->pressure / (2.0f * p->density * 1.0f) * W_spiky * (diff / r);
+                            //         p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                             //     }
                             // }
                             if(isnan(p->acc.x) || isnan(p->acc.y)) {
@@ -258,7 +262,7 @@ int main() {
                     if(_mouse->getLB()) {
                         glm::vec2 toMouse = _mouse->getPos() - p->pos;
                         if(glm::dot(toMouse, toMouse) < 32 * 32)
-                            p->vel += 0.01f * _mouse->getDiff();
+                            p->vel += mouse_coeff * _mouse->getDiff();
                     }
                     _integrator.integrateStep1(p->pos, p->vel, p->acc, dt);
                     capMagnitude(p->vel, max_vel);
@@ -296,6 +300,7 @@ int main() {
         delete p;
     delete _renderer;
     delete _mouse;
+    cleanUtils();
 
     std::cout << "Quit program" << std::endl;
 
