@@ -2,9 +2,10 @@
 #include <iostream>
 #include <vector>
 #include <unordered_set>
-#include <glm/glm.hpp>
-#include <glm/gtx/string_cast.hpp>
 #include <SDL2/SDL.h>
+#include <libconfig.h++>
+#include "glm/glm.hpp"
+#include "glm/gtx/string_cast.hpp"
 #include "ODE_solvers/implicitEuler.h"
 #include "renderer.h"
 #include "mouse.h"
@@ -63,7 +64,7 @@ inline static void handleInput(bool& running, mouse* _mouse) {
     }
 }
 
-void generateParticles(std::vector<point*>& points, std::unordered_set<point*> grid[16][16], glm::ivec2 from, glm::ivec2 to, float dist, int cellSize) {
+void generateParticles(std::vector<point*>& points, std::unordered_set<point*> grid[][32], glm::ivec2 from, glm::ivec2 to, float dist, int cellSize) {
     for(int r = from.y; r < to.y; r += dist) {
         for(int c = from.x; c < to.x; c += dist) {
             point* p = new point {
@@ -93,13 +94,50 @@ inline static void capMagnitude(glm::vec2& v, float maxMag) {
 
 int main() {
     const int width = 511, height = 511;
+    std::string generalconfig = "config/general.cfg";
+
     renderer* _renderer = new renderer();
     bool running = _renderer->setup(width, height);
-    float dt = 1.0f;
 
     mouse* _mouse = new mouse();
 
-    const int cellSize = 32;
+    libconfig::Config cfg;
+    try {
+        cfg.readFile(generalconfig);
+    }
+    catch(const libconfig::FileIOException &fioex)
+    {
+        std::cerr << "I/O error while reading file." << std::endl;
+        return(EXIT_FAILURE);
+    }
+    catch(const libconfig::ParseException &pex)
+    {
+        std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError() << std::endl;
+        return(EXIT_FAILURE);
+    }
+
+    float dt = cfg.lookup("dt");
+    glm::vec2 G;
+    G.x = cfg.lookup("gravity.x");
+    G.y = cfg.lookup("gravity.y");
+
+    const int num_iterations = cfg.lookup("num_iterations");
+    const float K = cfg.lookup("K_coeff");
+    const float h = 8;
+    const float h2 = h * h;
+    const float h6 = pow(h, 0);
+    const float p0 = cfg.lookup("p0");
+    const float e = cfg.lookup("viscosity");
+
+    const float poly6_constant = 315.0f / (64.0f * PI * pow(h, 0));
+    const float spiky_constant = -45 / (PI * h6);
+    const float viscosity_lap_constant = 45 / (PI * h6);
+
+    const float mass = cfg.lookup("mass");
+    const float max_vel = cfg.lookup("max_vel");
+    const float max_acc = cfg.lookup("max_acc");
+
+    const int cellSize = 16;
     const int gridDimX = (width + 1) / cellSize;
     const int gridDimY = (height + 1) / cellSize;
     std::unordered_set<point*> grid[gridDimY][gridDimX];
@@ -120,23 +158,9 @@ int main() {
     br = { 325, 200 };
     bool once = false;
 
-    glm::vec2 G(0, 0.01f);
-
     implicitEuler _integrator([=](float t, glm::vec2 y, glm::vec2 z, glm::vec2 zdash) -> glm::vec2 {
         return zdash + G;
     });
-
-    const float K = 250;
-    const float h = 8;
-    const float h2 = h * h;
-    const float h6 = pow(h, 0);
-    const float p0 = 1;
-    const float e = 0.001f;
-    const float poly6_constant = 315.0f / (64.0f * PI * pow(h, 0));
-    const float spiky_constant = -45 / (PI * h6);
-    const float viscosity_lap_constant = 45 / (PI * h6);
-
-    const float mass = 1;
 
     Uint32 lastUpd = SDL_GetTicks();
     while(running) {
@@ -150,7 +174,7 @@ int main() {
 
             _renderer->clearScreen(0xFF000816);
 
-            for(int i = 0; i < 1; i++) {
+            for(int i = 0; i < num_iterations; i++) {
                 // density and pressure
                 for(int r = 0; r < gridDimY; r++) {
                     for(int c = 0; c < gridDimX; c++) {
@@ -237,7 +261,7 @@ int main() {
                             p->vel += 0.01f * _mouse->getDiff();
                     }
                     _integrator.integrateStep1(p->pos, p->vel, p->acc, dt);
-                    capMagnitude(p->vel, 0.7f);
+                    capMagnitude(p->vel, max_vel);
                     
                     _integrator.integrateStep2(p->pos, p->vel, dt);
                     resolveOutOfBounds(*p, width, height);
