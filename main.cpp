@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <SDL2/SDL.h>
 #include <libconfig.h++>
+#include <omp.h>
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "ODE_solvers/implicitEuler.h"
@@ -149,7 +150,7 @@ int main() {
     glm::ivec2 tl(50, 50);
     glm::ivec2 br(125, 200);
     float radius = 4.0f;
-    float dist = 7.0f;
+    float dist = h - 0.0001f;
 
     generateParticles(points, grid, tl, br, dist, cellSize);
 
@@ -180,77 +181,73 @@ int main() {
 
             for(int i = 0; i < num_iterations; i++) {
                 // density and pressure
-                for(int r = 0; r < gridDimY; r++) {
-                    for(int c = 0; c < gridDimX; c++) {
-                        for(auto& p : grid[r][c]) {
-                            // density
-                            p->density = 0;
-                            for(int ir = std::max(0, r - 1); ir <= std::min(gridDimY - 1, r + 1); ir++) {
-                                for(int ic = std::max(0, c - 1); ic <= std::min(gridDimX - 1, c + 1); ic++) {
-                                    for(auto& q : grid[ir][ic]) {
-                                        const glm::vec2 diff = p->pos - q->pos;
-                                        const float r2 = glm::dot(diff, diff);
-                                        if(r2 < h2) {
-                                            const float W = poly6_coeff * (h2 - r2) * (h2 - r2) * (h2 - r2);
-                                            p->density += mass * W;
-                                        }
-                                    }
+                for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
+                    for(auto& p : grid[r][c]) {
+                        // density
+                        p->density = 0;
+                        const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
+                        const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
+                        for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+                            for(auto& q : grid[ir][ic]) {
+                                const glm::vec2 diff = p->pos - q->pos;
+                                const float r2 = glm::dot(diff, diff);
+                                if(r2 < h2) {
+                                    const float W = poly6_coeff * (h2 - r2) * (h2 - r2) * (h2 - r2);
+                                    p->density += mass * W;
                                 }
                             }
-                            if(isnan(p->density)) {
-                                std::cout << "nan encountered in density";
-                                return 0;
-                            }
-                            p->density = std::max(p0, p->density);
+                        }
+                        if(isnan(p->density)) {
+                            std::cout << "nan encountered in density";
+                            return 0;
+                        }
+                        p->density = std::max(p0, p->density);
 
-                            // pressure
-                            p->pressure = K * (p->density - p0);
-                            if(isnan(p->pressure)) {
-                                std::cout << "nan encountered in pressure";
-                                return 0;
-                            }
+                        // pressure
+                        p->pressure = K * (p->density - p0);
+                        if(isnan(p->pressure)) {
+                            std::cout << "nan encountered in pressure";
+                            return 0;
                         }
                     }
                 }
 
                 // acceleration
-                for(int r = 0; r < gridDimY; r++) {
-                    for(int c = 0; c < gridDimX; c++) {
-                        for(auto& p : grid[r][c]) {
-                            p->acc = { 0, 0 };
-                            for(int ir = std::max(0, r - 1); ir <= std::min(gridDimY - 1, r + 1); ir++) {
-                                for(int ic = std::max(0, c - 1); ic <= std::min(gridDimX - 1, c + 1); ic++) {
-                                    for(auto& q : grid[ir][ic]) {
-                                        if(q == p)
-                                            continue;
-                                        const glm::vec2 diff = p->pos - q->pos;
-                                        const float r2 = glm::dot(diff, diff);
-                                        const float r = sqrt(r2);
+                for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
+                    for(auto& p : grid[r][c]) {
+                        p->acc = { 0, 0 };
+                        const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
+                        const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
+                        for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+                            for(auto& q : grid[ir][ic]) {
+                                if(q == p)
+                                    continue;
+                                const glm::vec2 diff = p->pos - q->pos;
+                                const float r2 = glm::dot(diff, diff);
+                                const float r = sqrt(r2);
 
-                                        if(r > 1e-3 && r < h) {
-                                            const float W_spiky = spiky_coeff * (h - r) * (h - r);
-                                            const float W_lap = viscosity_lap_coeff * (h - r);
-                                            p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
-                                            p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
-                                        }
-                                    }
+                                if(r > 1e-3 && r < h) {
+                                    const float W_spiky = spiky_coeff * (h - r) * (h - r);
+                                    const float W_lap = viscosity_lap_coeff * (h - r);
+                                    p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
+                                    p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
                                 }
                             }
-                            // if(p->pos.y >= height-10) {
-                            //     const glm::vec2 diff = { 0, 2 * radius - p->pos.y + height - 10 };
-                            //     const float r2 = glm::dot(diff, diff);
-                            //     const float r = sqrt(r2);
-                            //     if(r > 1e-3 && r < h) {
-                            //         const float W_spiky = spiky_coeff * (h - r) * (h - r);
-                            //         p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
-                            //     }
-                            // }
-                            if(isnan(p->acc.x) || isnan(p->acc.y)) {
-                                std::cout << "nan encountered in acc";
-                                return 0;
-                            }
-                            // capMagnitude(p->acc, 0.5f);
                         }
+                        if(p->pos.y >= height-10) {
+                            const glm::vec2 diff = { 0, p->pos.y - height + 10 - h };
+                            const float r2 = glm::dot(diff, diff);
+                            const float r = sqrt(r2);
+                            if(r > 1e-3 && r < h) {
+                                const float W_spiky = spiky_coeff * (h - r) * (h - r);
+                                p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
+                            }
+                        }
+                        if(isnan(p->acc.x) || isnan(p->acc.y)) {
+                            std::cout << "nan encountered in acc";
+                            return 0;
+                        }
+                        // capMagnitude(p->acc, 0.5f);
                     }
                 }
 
