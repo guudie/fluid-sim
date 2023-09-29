@@ -130,9 +130,9 @@ int main() {
     const float p0 = cfg.lookup("p0");
     const float e = cfg.lookup("viscosity");
 
-    const float poly6_constant = 315.0f / (64.0f * PI * pow(h, 0));
-    const float spiky_constant = -45 / (PI * h6);
-    const float viscosity_lap_constant = 45 / (PI * h6);
+    const float poly6_coeff = 315.0f / (64.0f * PI * pow(h, 0));
+    const float spiky_coeff = -45 / (PI * h6);
+    const float viscosity_lap_coeff = 45 / (PI * h6);
 
     const float mass = cfg.lookup("mass");
     const float max_vel = cfg.lookup("max_vel");
@@ -157,8 +157,8 @@ int main() {
     br = { 425, 200 };
     generateParticles(points, grid, tl, br, dist, cellSize);
 
-    tl = { 200, 150 };
-    br = { 350, 225 };
+    tl = { 200, 100 };
+    br = { 350, 175 };
     int cnt = 0;
 
     implicitEuler _integrator([=](float t, glm::vec2 y, glm::vec2 z, glm::vec2 zdash) -> glm::vec2 {
@@ -191,7 +191,7 @@ int main() {
                                         const glm::vec2 diff = p->pos - q->pos;
                                         const float r2 = glm::dot(diff, diff);
                                         if(r2 < h2) {
-                                            const float W = poly6_constant * pow(h2 - r2, 3);
+                                            const float W = poly6_coeff * (h2 - r2) * (h2 - r2) * (h2 - r2);
                                             p->density += mass * W;
                                         }
                                     }
@@ -228,8 +228,8 @@ int main() {
                                         const float r = sqrt(r2);
 
                                         if(r > 1e-3 && r < h) {
-                                            const float W_spiky = spiky_constant * (h - r) * (h - r);
-                                            const float W_lap = viscosity_lap_constant * (h - r);
+                                            const float W_spiky = spiky_coeff * (h - r) * (h - r);
+                                            const float W_lap = viscosity_lap_coeff * (h - r);
                                             p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
                                             p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
                                         }
@@ -241,7 +241,7 @@ int main() {
                             //     const float r2 = glm::dot(diff, diff);
                             //     const float r = sqrt(r2);
                             //     if(r > 1e-3 && r < h) {
-                            //         const float W_spiky = spiky_constant * (h - r) * (h - r);
+                            //         const float W_spiky = spiky_coeff * (h - r) * (h - r);
                             //         p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                             //     }
                             // }
