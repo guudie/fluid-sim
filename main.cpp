@@ -148,7 +148,7 @@ int main() {
     std::vector<point*> points;
 
     glm::ivec2 tl(0, 450);
-    glm::ivec2 br(width, height);
+    glm::ivec2 br(width, height-10);
     float radius = 4.0f;
     float dist = h - 0.0001f;
 
