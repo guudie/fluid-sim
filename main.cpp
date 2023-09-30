@@ -166,6 +166,7 @@ int main() {
         return zdash + G;
     });
 
+    error_code err = error_code::NONE;
     Uint32 lastUpd = SDL_GetTicks();
     while(running) {
         Uint32 curTime = SDL_GetTicks();
@@ -181,6 +182,7 @@ int main() {
 
             for(int i = 0; i < num_iterations; i++) {
                 // density and pressure
+                #pragma omp parallel for collapse(2)
                 for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
                     for(auto& p : grid[r][c]) {
                         // density
@@ -197,22 +199,32 @@ int main() {
                                 }
                             }
                         }
-                        if(isnan(p->density)) {
-                            std::cout << "nan encountered in density";
-                            return 0;
+                        #pragma omp critical(check_nan_density)
+                        {
+                            if(err == error_code::NONE && isnan(p->density)) {
+                                err = error_code::NAN_DENSITY;
+                            }
                         }
                         p->density = std::max(p0, p->density);
 
                         // pressure
                         p->pressure = K * (p->density - p0);
-                        if(isnan(p->pressure)) {
-                            std::cout << "nan encountered in pressure";
-                            return 0;
+                        #pragma omp critical(check_nan_pressure)
+                        {
+                            if(err == error_code::NONE && isnan(p->pressure)) {
+                                err = error_code::NAN_PRESSURE;
+                            }
                         }
                     }
                 }
 
+                if(err != error_code::NONE) {
+                    printErrorMessage(err);
+                    goto abort_jmp;
+                }
+
                 // acceleration
+                #pragma omp parallel for collapse(2)
                 for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
                     for(auto& p : grid[r][c]) {
                         p->acc = { 0, 0 };
@@ -243,15 +255,23 @@ int main() {
                                 p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                             }
                         }
-                        if(isnan(p->acc.x) || isnan(p->acc.y)) {
-                            std::cout << "nan encountered in acc";
-                            return 0;
+                        #pragma omp critical(check_nan_acc)
+                        {
+                            if(err == error_code::NONE && (isnan(p->acc.x) || isnan(p->acc.y))) {
+                                err = error_code::NAN_ACC;
+                            }
                         }
                         // capMagnitude(p->acc, 0.5f);
                     }
                 }
 
+                if(err != error_code::NONE) {
+                    printErrorMessage(err);
+                    goto abort_jmp;
+                }
+
                 // integrate movements
+                #pragma omp parallel for
                 for(auto& p : points) {
                     // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
@@ -267,20 +287,30 @@ int main() {
                     _integrator.integrateStep2(p->pos, p->vel, dt);
                     resolveOutOfBounds(*p, width, height);
 
-                    if(isnan(p->pos.x) || isnan(p->pos.y)) {
-                        std::cout << "nan encountered in position";
-                        return 0;
+                    #pragma omp critical(check_nan_pos)
+                    {
+                        if(err == error_code::NONE && (isnan(p->pos.x) || isnan(p->pos.y))) {
+                            err = error_code::NAN_POS;
+                        }
                     }
                     glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
                     if(p->gridIdx != newIdx) {
-                        if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
-                            std::cout << "seriously???";
-                            return 0;
+                        #pragma omp critical(grid_update)
+                        {
+                            if(err == error_code::NONE && (newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY)) {
+                                err = error_code::IDX_OUT_OF_RANGE;
+                            } else if(err == error_code::NONE) {
+                                grid[p->gridIdx.y][p->gridIdx.x].erase(p);
+                                grid[newIdx.y][newIdx.x].insert(p);
+                                p->gridIdx = newIdx;
+                            }
                         }
-                        grid[p->gridIdx.y][p->gridIdx.x].erase(p);
-                        grid[newIdx.y][newIdx.x].insert(p);
-                        p->gridIdx = newIdx;
                     }
+                }
+                
+                if(err != error_code::NONE) {
+                    printErrorMessage(err);
+                    goto abort_jmp;
                 }
             }
 
@@ -292,6 +322,8 @@ int main() {
             lastUpd = curTime;
         }
     }
+
+abort_jmp:
 
     for(auto& p : points)
         delete p;

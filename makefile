@@ -2,7 +2,6 @@
 
 EXT =
 WINOPT = 
-
 ifeq ($(OS), Windows_NT)
 	EXT = .exe
 	WINOPT = -mconsole
@@ -11,7 +10,8 @@ SUBDIRS = ODE_solvers
 ARGS = -O2
 GCC = g++
 
-CFLAGS = $(WINOPT) -O2 -Wall -lm `sdl2-config --libs` -lconfig++
+OMP = -fopenmp
+CFLAGS = $(WINOPT) $(OMP) -O2 -Wall -lm `sdl2-config --libs` -lconfig++
 
 all: subdirs renderer.o mouse.o utils.o main.o app$(EXT)
 clean:
@@ -35,7 +35,7 @@ utils.o: utils.h utils.cpp
 	$(GCC) $(ARGS) -c utils.cpp -o utils.o
 
 main.o: main.cpp renderer.h mouse.h utils.h ./ODE_solvers/implicitEuler.h ./ODE_solvers/ODESolver.h
-	$(GCC) $(ARGS) -c main.cpp -o main.o
+	$(GCC) $(ARGS) $(OMP) -c main.cpp -o main.o
 
 app$(EXT): main.o renderer.o mouse.o utils.o ./ODE_solvers/ode_joined.o
 	$(GCC) -o $@ $^ $(CFLAGS)

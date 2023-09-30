@@ -49,6 +49,36 @@ void cleanUtils() {
     utilsSingleton::clean();
 }
 
+/*
+    NONE,
+    NAN_DENSITY,
+    NAN_PRESSURE,
+    NAN_ACC,
+    NAN_POS,
+    IDX_OUT_OF_RANGE
+*/
+void printErrorMessage(const error_code& err) {
+    switch(err) {
+    case error_code::NAN_DENSITY:
+        std::cout << "Nan encountered in density" << std::endl;
+        break;
+    case error_code::NAN_PRESSURE:
+        std::cout << "Nan encountered in pressure" << std::endl;
+        break;
+    case error_code::NAN_ACC:
+        std::cout << "Nan encountered in acc" << std::endl;
+        break;
+    case error_code::NAN_POS:
+        std::cout << "Nan encountered in position" << std::endl;
+        break;
+    case error_code::IDX_OUT_OF_RANGE:
+        std::cout << "Index out of range" << std::endl;
+        break;
+    default:
+        break;
+    }
+}
+
 void resolveOutOfBounds(point& p, int w, int h) {
     utilsSingleton* instance = utilsSingleton::getInstance();
     if(p.pos.x > w) {
