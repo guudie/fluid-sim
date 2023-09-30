@@ -2,7 +2,6 @@
 * `GNU make`
 * `g++` compiler with the following libraries installed
   * `SDL2` ([libsdl.org](https://www.libsdl.org/)), which provides rendering functionality
-  * `libconfig` ([hyperrealm.github.io](https://hyperrealm.github.io/libconfig/)), which provides config file parsing
 
 ### Build and run
 With `GNU make` installed, open cmd/terminal in the `water-sim/` folder and run the command `make`, the output executable with be named `app`.
