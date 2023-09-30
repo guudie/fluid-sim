@@ -147,15 +147,11 @@ int main() {
     std::unordered_set<point*> grid[gridDimY][gridDimX];
     std::vector<point*> points;
 
-    glm::ivec2 tl(50, 50);
-    glm::ivec2 br(125, 200);
+    glm::ivec2 tl(0, 450);
+    glm::ivec2 br(width, height);
     float radius = 4.0f;
     float dist = h - 0.0001f;
 
-    generateParticles(points, grid, tl, br, dist, cellSize);
-
-    tl = { 350, 50 };
-    br = { 425, 200 };
     generateParticles(points, grid, tl, br, dist, cellSize);
 
     tl = { 200, 100 };
