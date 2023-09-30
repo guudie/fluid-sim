@@ -2,7 +2,6 @@
 
 EXT =
 WINOPT = 
-
 ifeq ($(OS), Windows_NT)
 	EXT = .exe
 	WINOPT = -mconsole
