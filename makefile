@@ -10,7 +10,7 @@ SUBDIRS = ODE_solvers
 ARGS = -O2
 GCC = g++
 
-LIBS = `sdl2-config --libs` -L./libconfig/lib -lconfig++
+LIBS = `sdl2-config --libs` -lconfig++
 CFLAGS = $(WINOPT) -O2 -Wall -lm $(LIBS)
 
 all: subdirs renderer.o mouse.o utils.o main.o app$(EXT)

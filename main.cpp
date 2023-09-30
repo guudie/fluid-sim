@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <SDL2/SDL.h>
 #include <omp.h>
-#include "libconfig/include/libconfig.h++"
+#include <libconfig.h++>
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "ODE_solvers/implicitEuler.h"

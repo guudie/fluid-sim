@@ -1,6 +1,6 @@
 #define LIBCONFIGXX_STATIC
 #include <iostream>
-#include "libconfig/include/libconfig.h++"
+#include <libconfig.h++>
 #include "utils.h"
 
 static const std::string utilsConfigPath = "config/utils.cfg";
