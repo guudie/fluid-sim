@@ -231,8 +231,8 @@ int main() {
                                 }
                             }
                         }
-                        if(p->pos.y >= height-10) {
-                            const glm::vec2 diff = { 0, p->pos.y - height + 10 - h };
+                        if(p->pos.y >= height-11) {
+                            const glm::vec2 diff = { 0, p->pos.y - height + 11 - h };
                             const float r2 = glm::dot(diff, diff);
                             const float r = sqrt(r2);
                             if(r > EPS && r < h) {
