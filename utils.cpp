@@ -1,4 +1,3 @@
-#define LIBCONFIGXX_STATIC
 #include <iostream>
 #include <libconfig.h++>
 #include "utils.h"

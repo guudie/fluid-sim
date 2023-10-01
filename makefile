@@ -2,15 +2,24 @@
 
 EXT =
 WINOPT = 
+DEBUGCONSOLE = true
 ifeq ($(OS), Windows_NT)
 	EXT = .exe
-	WINOPT = -mconsole
+	ifeq ($(DEBUGCONSOLE), true)
+		WINOPT = -mconsole
+	endif
 endif
 SUBDIRS = ODE_solvers
 ARGS = -O2
 GCC = g++
 
 LIBS = `sdl2-config --libs` -lconfig++
+LCFGFLAG = 
+STATICLINK = false
+ifeq ($(STATICLINK), true)
+	LIBS = `sdl2-config --static-libs` -lconfig++ --static
+	LCFGFLAG = -DLIBCONFIGXX_STATIC
+endif
 CFLAGS = $(WINOPT) -O2 -Wall -lm $(LIBS)
 
 all: subdirs renderer.o mouse.o utils.o main.o app$(EXT)
@@ -32,10 +41,10 @@ mouse.o: mouse.h mouse.cpp
 	$(GCC) $(ARGS) -c mouse.cpp -o mouse.o
 
 utils.o: utils.h utils.cpp
-	$(GCC) $(ARGS) -c utils.cpp -o utils.o
+	$(GCC) $(ARGS) $(LCFGFLAG) -c utils.cpp -o utils.o
 
 main.o: main.cpp renderer.h mouse.h utils.h ./ODE_solvers/implicitEuler.h ./ODE_solvers/ODESolver.h
-	$(GCC) $(ARGS) -c main.cpp -o main.o
+	$(GCC) $(ARGS) $(LCFGFLAG) -c main.cpp -o main.o
 
 app$(EXT): main.o renderer.o mouse.o utils.o ./ODE_solvers/ode_joined.o
 	$(GCC) -o $@ $^ $(CFLAGS)
