@@ -1,5 +1,4 @@
 #define SDL_MAIN_HANDLED
-#define LIBCONFIGXX_STATIC
 #include <iostream>
 #include <vector>
 #include <unordered_set>
