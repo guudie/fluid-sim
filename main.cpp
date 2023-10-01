@@ -13,6 +13,7 @@
 #include "utils.h"
 
 #define PI 3.14159265359
+#define EPS 1e-6
 
 inline static void handleInput(bool& running, mouse* _mouse) {
     SDL_Event event;
@@ -85,7 +86,7 @@ void generateParticles(std::vector<point*>& points, std::unordered_set<point*> g
 
 inline static void capMagnitude(glm::vec2& v, float maxMag) {
     float len = glm::length(v);
-    if(len < 1e-6) {
+    if(len < EPS) {
         v = { 0, 0 };
         return;
     }
@@ -237,7 +238,7 @@ int main() {
                                 const float r2 = glm::dot(diff, diff);
                                 const float r = sqrt(r2);
 
-                                if(r > 1e-3 && r < h) {
+                                if(r > EPS && r < h) {
                                     const float W_spiky = spiky_coeff * (h - r) * (h - r);
                                     const float W_lap = viscosity_lap_coeff * (h - r);
                                     p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
@@ -249,7 +250,7 @@ int main() {
                             const glm::vec2 diff = { 0, p->pos.y - height + 10 - h };
                             const float r2 = glm::dot(diff, diff);
                             const float r = sqrt(r2);
-                            if(r > 1e-3 && r < h) {
+                            if(r > EPS && r < h) {
                                 const float W_spiky = spiky_coeff * (h - r) * (h - r);
                                 p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                             }
