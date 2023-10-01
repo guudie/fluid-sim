@@ -1,22 +1,39 @@
-#include "application.h"
+#include "fluid_sim.h"
 #include "renderer.h"
 #include "mouse.h"
 #include "ODE_solvers/ODESolver.h"
+#include "utils.h"
 
-void application::setupFromPath(int windowWidth, int windowHeight, std::string path, ODESolver* _integrator) {
+void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, ODESolver* integrator) {
+    assert(integrator != nullptr);
+    _integrator = integrator;
     _renderer = new renderer();
     _mouse = new mouse();
-    _cloth = new cloth(_integrator);
+
+    int num_iterations = cfg.lookup("num_iterations");
+    float K = cfg.lookup("K");
+    float h = cfg.lookup("h");
+    float h2 = h * h;
+    float h6 = pow(h, 0);
+    float p0 = cfg.lookup("p0");
+    float e = cfg.lookup("viscosity");
+    float poly6_coeff = 315.0f / (64.0f * PI * pow(h, 0));
+    float spiky_coeff = -45 / (PI * h6);
+    float viscosity_lap_coeff = 45 / (PI * h6);
+    float mass = cfg.lookup("mass");
+    float max_vel = cfg.lookup("max_vel");
+    float max_acc = cfg.lookup("max_acc");
+    float mouse_coeff = cfg.lookup("mouse_coeff");
+    int cellSize = 16;
+    int gridDimX = (windowWidth + 1) / cellSize;
+    int gridDimY = (windowHeight + 1) / cellSize;
 
     running = _renderer->setup(windowWidth, windowHeight);
-
-    // only allowing initialization from data path for now
-    _cloth->initFromFile(path);
 
     lastUpdateTime = SDL_GetTicks();
 }
 
-void application::input() {
+void fluid_sim::input() {
     SDL_Event event;
     int x, y;
     while(SDL_PollEvent(&event)) {
@@ -67,7 +84,7 @@ void application::input() {
     }
 }
 
-void application::updateNoTick() {
+void fluid_sim::updateNoTick() {
     currentTime = SDL_GetTicks();
     float dt = (currentTime - lastUpdateTime) * 60.0f / 1000.0f;    // dt is the ratio of actual deltatime to 16.6ms (60 FPS)
 
@@ -76,7 +93,7 @@ void application::updateNoTick() {
     lastUpdateTime = currentTime;
 }
 
-void application::updateWithTick() {
+void fluid_sim::updateWithTick() {
     currentTime = SDL_GetTicks();
     if(currentTime - lastUpdateTime >= tickDuration) {
         _cloth->update(_mouse, _renderer->getWidth(), _renderer->getHeight());
@@ -86,14 +103,14 @@ void application::updateWithTick() {
     }
 }
 
-void application::update() {
+void fluid_sim::update() {
     if(updateEveryTick)
         updateWithTick();
     else
         updateNoTick();
 }
 
-void application::render() {
+void fluid_sim::render() {
     if(updateEveryTick && !updatedThisTick)
         return;
     _renderer->clearScreen(0xFF000816);
@@ -104,24 +121,24 @@ void application::render() {
     updatedThisTick = false;
 }
 
-bool application::isRunning() const {
+bool fluid_sim::isRunning() const {
     return running;
 }
 
-bool application::isUpdateEveryTick() const {
+bool fluid_sim::isUpdateEveryTick() const {
     return updateEveryTick;
 }
 
-void application::setTickUpdate(bool _updateEveryTick, Uint32 _tickDuration) {
+void fluid_sim::setTickUpdate(bool _updateEveryTick, Uint32 _tickDuration) {
     updateEveryTick = _updateEveryTick;
     tickDuration = _tickDuration;
 }
 
-mouse* const& application::getMouseObject() const {
+mouse* const& fluid_sim::getMouseObject() const {
     return _mouse;
 }
 
-void application::destroy() {
+void fluid_sim::destroy() {
     delete _mouse;
     delete _renderer;
     delete _cloth;
