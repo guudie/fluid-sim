@@ -147,6 +147,9 @@ int main() {
     const int gridDimY = (height + 1) / cellSize;
     std::unordered_set<point*> grid[gridDimY][gridDimX];
     std::vector<point*> points;
+    omp_lock_t gridLock[gridDimY][gridDimX];
+    for(int i = 0; i < gridDimY; i++) for(int j = 0; j < gridDimX; j++)
+        omp_init_lock(&gridLock[i][j]);
 
     glm::ivec2 tl(0, 450);
     glm::ivec2 br(width, height-10);
@@ -292,15 +295,26 @@ int main() {
                     }
                     glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
                     if(p->gridIdx != newIdx) {
-                        #pragma omp critical(grid_update)
-                        {
-                            if(err == error_code::NONE && (newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY)) {
-                                err = error_code::IDX_OUT_OF_RANGE;
-                            } else if(err == error_code::NONE) {
-                                grid[p->gridIdx.y][p->gridIdx.x].erase(p);
-                                grid[newIdx.y][newIdx.x].insert(p);
-                                p->gridIdx = newIdx;
+                        if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
+                            #pragma omp critical(check_idx_oor)
+                            {
+                                if(err == error_code::NONE) {
+                                    err = error_code::IDX_OUT_OF_RANGE;
+                                }
                             }
+                        } else {
+                            // erase p from grid[p->gridIdx.y][p->gridIdx.x]
+                            omp_set_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
+                            grid[p->gridIdx.y][p->gridIdx.x].erase(p);
+                            omp_unset_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
+
+                            // insert p into grid[newIdx.y][newIdx.x]
+                            omp_set_lock(&gridLock[newIdx.y][newIdx.x]);
+                            grid[newIdx.y][newIdx.x].insert(p);
+                            omp_unset_lock(&gridLock[newIdx.y][newIdx.x]);
+
+                            // update grid index of p
+                            p->gridIdx = newIdx;
                         }
                     }
                 }
@@ -327,6 +341,8 @@ abort_jmp:
     delete _renderer;
     delete _mouse;
     cleanUtils();
+    for(int i = 0; i < gridDimY; i++) for(int j = 0; j < gridDimX; j++)
+        omp_destroy_lock(&gridLock[i][j]);
 
     std::cout << "Quit program" << std::endl;
 
