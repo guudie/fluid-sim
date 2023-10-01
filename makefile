@@ -22,7 +22,7 @@ ifeq ($(STATICLINK), true)
 endif
 CFLAGS = $(WINOPT) -O2 -Wall -lm $(LIBS)
 
-all: subdirs renderer.o mouse.o utils.o main.o app$(EXT)
+all: subdirs renderer.o mouse.o utils.o fluid_sim.o main.o app$(EXT)
 clean:
 	-rm *.o *.exe; \
 	for dir in $(SUBDIRS); do \
@@ -43,8 +43,11 @@ mouse.o: mouse.h mouse.cpp
 utils.o: utils.h utils.cpp
 	$(GCC) $(ARGS) $(LCFGFLAG) -c utils.cpp -o utils.o
 
-main.o: main.cpp renderer.h mouse.h utils.h ./ODE_solvers/implicitEuler.h ./ODE_solvers/ODESolver.h
+fluid_sim.o: fluid_sim.h fluid_sim.cpp
+	$(GCC) $(ARGS) $(LCFGFLAG) -c fluid_sim.cpp -o fluid_sim.o
+
+main.o: main.cpp renderer.h mouse.h utils.h fluid_sim.h ./ODE_solvers/implicitEuler.h ./ODE_solvers/ODESolver.h
 	$(GCC) $(ARGS) $(LCFGFLAG) -c main.cpp -o main.o
 
-app$(EXT): main.o renderer.o mouse.o utils.o ./ODE_solvers/ode_joined.o
+app$(EXT): main.o renderer.o mouse.o utils.o fluid_sim.o ./ODE_solvers/ode_joined.o
 	$(GCC) -o $@ $^ $(CFLAGS)

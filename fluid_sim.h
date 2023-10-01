@@ -4,19 +4,21 @@
 #include <vector>
 #include <unordered_set>
 #include <libconfig.h++>
+#include "glm/glm.hpp"
 
 struct point;
 
 class renderer;
 class mouse;
-class ODESolver;
+class implicitEuler;
 
 class fluid_sim {
 private:
     std::unordered_set<point*>** grid;
+    std::vector<point*> points;
     renderer* _renderer = nullptr;
     mouse* _mouse = nullptr;
-    ODESolver* _integrator;
+    implicitEuler* _integrator;
 
     bool running = false;
     bool updateEveryTick;
@@ -26,6 +28,8 @@ private:
     Uint32 currentTime;
     Uint32 tickDuration;
 
+    float dt = 1.0f;
+    float radius = 4.0f;
     int num_iterations;
     float K;
     float h;
@@ -54,11 +58,14 @@ public:
     void setTickUpdate(bool _updateEveryTick = false, Uint32 _tickDuration = 16);
 
     mouse* const& getMouseObject() const;
+    float getRadius() const;
+    float getH() const;
 
-    void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, ODESolver* integrator);
+    void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, implicitEuler* integrator);
     void input();
-    void updateNoTick();
-    void updateWithTick();
+    void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
+    void calcDensityAndPressure();
+    void calcAcceleration();
     void update();
     void render();
     void destroy();
