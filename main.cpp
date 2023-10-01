@@ -95,7 +95,7 @@ inline static void capMagnitude(glm::vec2& v, float maxMag) {
 }
 
 int main() {
-    const int width = 511, height = 511;
+    const int width = 512, height = 512;
     std::string configPath = "config/general.cfg";
     std::string utilsConfigPath = "config/utils.cfg";
 
@@ -143,13 +143,13 @@ int main() {
     const float mouse_coeff = cfg.lookup("mouse_coeff");
 
     const int cellSize = 16;
-    const int gridDimX = (width + 1) / cellSize;
-    const int gridDimY = (height + 1) / cellSize;
+    const int gridDimX = width / cellSize;
+    const int gridDimY = height / cellSize;
     std::unordered_set<point*> grid[gridDimY][gridDimX];
     std::vector<point*> points;
 
     glm::ivec2 tl(0, 450);
-    glm::ivec2 br(width, height-10);
+    glm::ivec2 br(width-1, height-10);
     float radius = 4.0f;
     float dist = h - 0.0001f;
 
@@ -262,7 +262,7 @@ int main() {
                     capMagnitude(p->vel, max_vel);
                     
                     _integrator.integrateStep2(p->pos, p->vel, dt);
-                    resolveOutOfBounds(*p, width, height);
+                    resolveOutOfBounds(*p, width-1, height-1);
 
                     if(isnan(p->pos.x) || isnan(p->pos.y)) {
                         std::cout << "nan encountered in position";
