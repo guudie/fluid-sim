@@ -11,7 +11,8 @@ ARGS = -O2
 GCC = g++
 
 OMP = -fopenmp
-CFLAGS = $(WINOPT) $(OMP) -O2 -Wall -lm `sdl2-config --libs` -lconfig++
+LIBS = `sdl2-config --libs` -lconfig++
+CFLAGS = $(WINOPT) $(OMP) -O2 -Wall -lm $(LIBS)
 
 all: subdirs renderer.o mouse.o utils.o main.o app$(EXT)
 clean:

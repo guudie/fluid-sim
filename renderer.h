@@ -23,4 +23,5 @@ public:
     void drawLine(glm::vec2 p0, glm::vec2 p1, Uint32 color) const;
     void drawPoint(glm::vec2 p, Uint32 color) const;
     void drawCircle(glm::vec2 center, float radius, Uint32 color) const;
+    void drawFilledCircle(glm::vec2 center, float radius, Uint32 color) const;
 };
