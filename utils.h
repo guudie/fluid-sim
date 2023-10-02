@@ -18,16 +18,6 @@ struct segment {
     float len;
 };
 
-enum error_code {
-    NONE,
-    NAN_DENSITY,
-    NAN_PRESSURE,
-    NAN_ACC,
-    NAN_POS,
-    IDX_OUT_OF_RANGE
-};
-
-void printErrorMessage(const error_code& err);
 void cleanUtils();
 void resolveOutOfBounds(point& p, int w, int h);
 void resolveVelocity(const glm::vec2& p, glm::vec2& v, const int& height);
