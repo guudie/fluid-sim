@@ -1,7 +1,7 @@
 .PHONY: all app temp clean subdirs
 
 EXT =
-WINOPT = 
+WINOPT =
 DEBUGCONSOLE = true
 ifeq ($(OS), Windows_NT)
 	EXT = .exe
@@ -14,7 +14,7 @@ ARGS = -O2
 GCC = g++
 
 LIBS = `sdl2-config --libs` -lconfig++
-LCFGFLAG = 
+LCFGFLAG =
 STATICLINK = false
 ifeq ($(STATICLINK), true)
 	LIBS = `sdl2-config --static-libs` -lconfig++ --static
