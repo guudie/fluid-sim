@@ -2,7 +2,7 @@
 #include "fluid_sim.h"
 #include "renderer.h"
 #include "mouse.h"
-#include "ODE_solvers/implicitEuler.h"
+#include "ODE_solvers/ODESolver.h"
 #include "utils.h"
 #include "glm/glm.hpp"
 
@@ -50,7 +50,7 @@ static void capMagnitude(glm::vec2& v, float maxMag) {
         v *= maxMag / len;
 }
 
-void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, implicitEuler* integrator) {
+void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, ODESolver* integrator) {
     assert(integrator != nullptr);
     _integrator = integrator;
     _renderer = new renderer();

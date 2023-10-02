@@ -11,7 +11,7 @@ struct point;
 
 class renderer;
 class mouse;
-class implicitEuler;
+class ODESolver;
 
 enum parallel_exception {
     NONE,
@@ -29,7 +29,7 @@ private:
     omp_lock_t** gridLock;
     renderer* _renderer = nullptr;
     mouse* _mouse = nullptr;
-    implicitEuler* _integrator;
+    ODESolver* _integrator;
 
     parallel_exception par_excpt = parallel_exception::NONE;
 
@@ -76,7 +76,7 @@ public:
     float getRadius() const;
     float getH() const;
 
-    void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, implicitEuler* integrator);
+    void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, ODESolver* integrator);
     void input();
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
     void generateInitialParticles();
