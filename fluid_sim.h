@@ -65,6 +65,7 @@ public:
 
     void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, ODESolver* integrator);
     void input();
+    void postInput();
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
     void generateInitialParticles();
     void calcDensityAndPressure();

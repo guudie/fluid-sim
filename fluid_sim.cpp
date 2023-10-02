@@ -105,8 +105,9 @@ void fluid_sim::input() {
             break;
         }
     }
+}
 
-    // additional actions after input check
+void fluid_sim::postInput() {
     if(_mouse->getRB() && generateCount < 6) {
         const int genWidth = 150;
         glm::ivec2 tl = { (_renderer->getWidth() - genWidth) / 2, 100 };
