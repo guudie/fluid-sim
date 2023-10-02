@@ -20,8 +20,13 @@ int main() {
     std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
 
     libconfig::Config cfg;
-    parseConfig(cfg, generalConfigPath);
-    getUtilsConfig();
+    try {
+        parseConfig(cfg, generalConfigPath);
+        getUtilsConfig();
+    } catch(std::runtime_error& rex) {
+        std::cout << rex.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
     glm::vec2 G;
     G.x = cfg.lookup("gravity.x");
@@ -40,6 +45,7 @@ int main() {
         Uint32 curTime = SDL_GetTicks();
         if(curTime - lastUpd >= 16) {
             sim->input();
+            sim->postInput();
 
             try {
                 sim->updateParallel();
