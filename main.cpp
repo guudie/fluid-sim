@@ -1,5 +1,6 @@
 #define SDL_MAIN_HANDLED
 #include <iostream>
+#include <stdexcept>
 #include <SDL2/SDL.h>
 #include <omp.h>
 #include <libconfig.h++>
@@ -41,8 +42,8 @@ int main() {
 
             try {
                 sim->update();
-            } catch(const char* err) {
-                std::cout << err << std::endl;
+            } catch(std::runtime_error& rex) {
+                std::cout << rex.what() << std::endl;
                 break;
             }
 

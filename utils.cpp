@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdexcept>
 #include <sstream>
 #include <libconfig.h++>
 #include "utils.h"
@@ -47,13 +48,13 @@ void parseConfig(libconfig::Config& cfg, const char* configPath) {
     }
     catch(const libconfig::FileIOException &fioex)
     {
-        throw "I/O error while reading file.";
+        throw std::runtime_error("I/O error while reading file.");
     }
     catch(const libconfig::ParseException &pex)
     {
         std::stringstream ss;
         ss << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError();
-        throw ss.str().c_str();
+        throw std::runtime_error(ss.str());
     }
 }
 

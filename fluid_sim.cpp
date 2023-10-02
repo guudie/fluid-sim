@@ -1,3 +1,4 @@
+#include <stdexcept>
 #include "fluid_sim.h"
 #include "renderer.h"
 #include "mouse.h"
@@ -158,16 +159,14 @@ void fluid_sim::calcDensityAndPressure() {
                 }
             }
             if(isnan(p->density)) {
-                throw "nan encountered in density";
-                return;
+                throw std::runtime_error("Nan encountered in density");
             }
             p->density = std::max(p0, p->density);
 
             // pressure
             p->pressure = K * (p->density - p0);
             if(isnan(p->pressure)) {
-                throw "nan encountered in pressure";
-                return;
+                throw std::runtime_error("Nan encountered in pressure");
             }
         }
     }
@@ -205,8 +204,7 @@ void fluid_sim::calcAcceleration() {
                 }
             }
             if(isnan(p->acc.x) || isnan(p->acc.y)) {
-                throw "nan encountered in acc";
-                return;
+                throw std::runtime_error("Nan encountered in acc");
             }
             // capMagnitude(p->acc, 0.5f);
         }
@@ -230,14 +228,12 @@ void fluid_sim::integrateMovements() {
         resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
 
         if(isnan(p->pos.x) || isnan(p->pos.y)) {
-            throw "nan encountered in position";
-            return;
+            throw std::runtime_error("Nan encountered in position");
         }
         glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
         if(p->gridIdx != newIdx) {
             if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
-                throw "seriously???";
-                return;
+                throw std::runtime_error("Index out of range");
             }
             grid[p->gridIdx.y][p->gridIdx.x].erase(p);
             grid[newIdx.y][newIdx.x].insert(p);
