@@ -18,6 +18,8 @@ const char* utilsConfigPath = "config/utils.cfg";
 int main() {
     const int width = 512, height = 512;
 
+    std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
+
     libconfig::Config cfg;
     parseConfig(cfg, generalConfigPath);
     getUtilsConfig();
