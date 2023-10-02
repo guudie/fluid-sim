@@ -83,6 +83,8 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     for(int i = 0; i < gridDimY; i++) {
         grid[i] = new std::unordered_set<point*>[gridDimX];
         gridLock[i] = new omp_lock_t[gridDimX];
+        for(int j = 0; j < gridDimX; j++)
+            omp_init_lock(&gridLock[i][j]);
     }
 
     running = _renderer->setup(windowWidth, windowHeight);
@@ -471,6 +473,9 @@ float fluid_sim::getH() const {
 }
 
 void fluid_sim::destroy() {
+    for(int i = 0; i < gridDimY; i++) for(int j = 0; j < gridDimX; j++)
+        omp_destroy_lock(&gridLock[i][j]);
+    
     for(int i = 0; i < gridDimY; i++) {
         delete[] grid[i];
         delete[] gridLock[i];

@@ -41,7 +41,7 @@ int main() {
             sim->input();
 
             try {
-                sim->update();
+                sim->updateParallel();
             } catch(std::runtime_error& rex) {
                 std::cout << rex.what() << std::endl;
                 break;
