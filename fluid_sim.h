@@ -1,4 +1,5 @@
 #pragma once
+#include <omp.h>
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>

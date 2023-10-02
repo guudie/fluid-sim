@@ -1,8 +1,9 @@
 #include <iostream>
+#include <stdexcept>
+#include <sstream>
 #include <libconfig.h++>
 #include "utils.h"
-
-static const std::string utilsConfigPath = "config/utils.cfg";
+#include "global.h"
 
 class utilsSingleton {
 private:
@@ -17,17 +18,7 @@ public:
     static utilsSingleton* getInstance() {
         if(!instance) {
             instance = new utilsSingleton();
-            try {
-                instance->utilsconfig.readFile(utilsConfigPath);
-            }
-            catch(const libconfig::FileIOException &fioex)
-            {
-                std::cerr << "I/O error while reading file." << std::endl;
-            }
-            catch(const libconfig::ParseException &pex)
-            {
-                std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError() << std::endl;
-            }
+            parseConfig(instance->utilsconfig, utilsConfigPath);
 
             instance->bounceCoeff = instance->utilsconfig.lookup("bounce_coeff");
             instance->groundBounceCoeff = instance->utilsconfig.lookup("ground_bounce_coeff");
@@ -47,6 +38,22 @@ utilsSingleton* utilsSingleton::instance = nullptr;
 
 void cleanUtils() {
     utilsSingleton::clean();
+}
+
+void parseConfig(libconfig::Config& cfg, const char* configPath) {
+    try {
+        cfg.readFile(configPath);
+    }
+    catch(const libconfig::FileIOException &fioex)
+    {
+        throw std::runtime_error("I/O error while reading file.");
+    }
+    catch(const libconfig::ParseException &pex)
+    {
+        std::stringstream ss;
+        ss << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError();
+        throw std::runtime_error(ss.str());
+    }
 }
 
 void resolveOutOfBounds(point& p, int w, int h) {

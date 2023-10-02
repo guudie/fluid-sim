@@ -1,5 +1,4 @@
 #include <stdexcept>
-#include <omp.h>
 #include "fluid_sim.h"
 #include "renderer.h"
 #include "mouse.h"
