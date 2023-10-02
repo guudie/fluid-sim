@@ -1,14 +1,11 @@
 #define SDL_MAIN_HANDLED
 #include <iostream>
-#include <vector>
-#include <unordered_set>
 #include <SDL2/SDL.h>
 #include <omp.h>
 #include <libconfig.h++>
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "ODE_solvers/implicitEuler.h"
-#include "renderer.h"
 #include "mouse.h"
 #include "utils.h"
 #include "fluid_sim.h"

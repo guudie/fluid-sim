@@ -28,6 +28,8 @@ private:
     Uint32 currentTime;
     Uint32 tickDuration;
 
+    int generateCount = 0;
+    int maxGenerateCount = 6;
     float dt = 1.0f;
     float radius = 4.0f;
     int num_iterations;
@@ -66,6 +68,7 @@ public:
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
     void calcDensityAndPressure();
     void calcAcceleration();
+    void integrateMovements();
     void update();
     void render();
     void destroy();

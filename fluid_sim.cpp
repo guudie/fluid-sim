@@ -197,43 +197,44 @@ void fluid_sim::calcAcceleration() {
     }
 }
 
+void fluid_sim::integrateMovements() {
+    for(auto& p : points) {
+        // _integrator.integrate(p->pos, p->vel, p->acc, dt);
+
+        // calculate velocity
+        if(_mouse->getLB()) {
+            glm::vec2 toMouse = _mouse->getPos() - p->pos;
+            if(glm::dot(toMouse, toMouse) < 32 * 32)
+                p->vel += mouse_coeff * _mouse->getDiff();
+        }
+        _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
+        capMagnitude(p->vel, max_vel);
+        
+        _integrator->integrateStep2(p->pos, p->vel, dt);
+        resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
+
+        if(isnan(p->pos.x) || isnan(p->pos.y)) {
+            throw "nan encountered in position";
+            return;
+        }
+        glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
+        if(p->gridIdx != newIdx) {
+            if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
+                throw "seriously???";
+                return;
+            }
+            grid[p->gridIdx.y][p->gridIdx.x].erase(p);
+            grid[newIdx.y][newIdx.x].insert(p);
+            p->gridIdx = newIdx;
+        }
+    }
+}
+
 void fluid_sim::update() {
     for(int i = 0; i < num_iterations; i++) {
         calcDensityAndPressure();
-
         calcAcceleration();
-
-        // integrate movements
-        for(auto& p : points) {
-            // _integrator.integrate(p->pos, p->vel, p->acc, dt);
-
-            // calculate velocity
-            if(_mouse->getLB()) {
-                glm::vec2 toMouse = _mouse->getPos() - p->pos;
-                if(glm::dot(toMouse, toMouse) < 32 * 32)
-                    p->vel += mouse_coeff * _mouse->getDiff();
-            }
-            _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
-            capMagnitude(p->vel, max_vel);
-            
-            _integrator->integrateStep2(p->pos, p->vel, dt);
-            resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
-
-            if(isnan(p->pos.x) || isnan(p->pos.y)) {
-                throw "nan encountered in position";
-                return;
-            }
-            glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
-            if(p->gridIdx != newIdx) {
-                if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
-                    throw "seriously???";
-                    return;
-                }
-                grid[p->gridIdx.y][p->gridIdx.x].erase(p);
-                grid[newIdx.y][newIdx.x].insert(p);
-                p->gridIdx = newIdx;
-            }
-        }
+        integrateMovements();
     }
 }
 
