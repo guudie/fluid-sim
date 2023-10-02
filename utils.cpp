@@ -5,8 +5,6 @@
 #include "utils.h"
 #include "global.h"
 
-// class utilsConfigEntity;
-
 class utilsSingleton {
 private:
     libconfig::Config utilsconfig;
