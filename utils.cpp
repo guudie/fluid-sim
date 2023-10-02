@@ -5,39 +5,14 @@
 #include "utils.h"
 #include "global.h"
 
-class utilsSingleton {
-private:
-    libconfig::Config utilsconfig;
-    float bounceCoeff;
-    float groundBounceCoeff;
-    utilsSingleton() = default;
+static libconfig::Config utilsconfig;
+static float bounceCoeff;
+static float groundBounceCoeff;
 
-public:
-    static utilsSingleton* instance;
-
-    static utilsSingleton* getInstance() {
-        if(!instance) {
-            instance = new utilsSingleton();
-            parseConfig(instance->utilsconfig, utilsConfigPath);
-
-            instance->bounceCoeff = instance->utilsconfig.lookup("bounce_coeff");
-            instance->groundBounceCoeff = instance->utilsconfig.lookup("ground_bounce_coeff");
-        }
-        return instance;
-    }
-
-    static void clean() {
-        if(instance)
-            delete instance;
-    }
-
-    float getBounceCoeff() { return bounceCoeff; }
-    float getGroundBounceCoeff() { return groundBounceCoeff; }
-};
-utilsSingleton* utilsSingleton::instance = nullptr;
-
-void cleanUtils() {
-    utilsSingleton::clean();
+void getUtilsConfig() {
+    parseConfig(utilsconfig, utilsConfigPath);
+    bounceCoeff = utilsconfig.lookup("bounce_coeff");
+    groundBounceCoeff = utilsconfig.lookup("ground_bounce_coeff");
 }
 
 void parseConfig(libconfig::Config& cfg, const char* configPath) {
@@ -57,22 +32,21 @@ void parseConfig(libconfig::Config& cfg, const char* configPath) {
 }
 
 void resolveOutOfBounds(point& p, int w, int h) {
-    utilsSingleton* instance = utilsSingleton::getInstance();
     if(p.pos.x > w) {
         p.pos.x = w;
-        p.vel.x *= -instance->getBounceCoeff();
+        p.vel.x *= -bounceCoeff;
     }
     if(p.pos.x < 0){
         p.pos.x = 0;
-        p.vel.x *= -instance->getBounceCoeff();
+        p.vel.x *= -bounceCoeff;
     }
     if(p.pos.y > h - 10) {
         p.pos.y = h - 10;
-        p.vel.y *= -instance->getBounceCoeff() * instance->getGroundBounceCoeff();
+        p.vel.y *= -bounceCoeff * groundBounceCoeff;
     }
     if(p.pos.y < 0) {
         p.pos.y = 0;
-        p.vel.y *= -instance->getBounceCoeff();
+        p.vel.y *= -bounceCoeff;
     }
 }
 

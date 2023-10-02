@@ -20,6 +20,7 @@ int main() {
 
     libconfig::Config cfg;
     parseConfig(cfg, generalConfigPath);
+    getUtilsConfig();
 
     float dt = cfg.lookup("dt");
     glm::vec2 G;
@@ -54,7 +55,6 @@ int main() {
     }
 
     sim->destroy();
-    cleanUtils();
     delete sim;
 
     std::cout << "Quit program" << std::endl;

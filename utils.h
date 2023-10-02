@@ -19,7 +19,7 @@ struct segment {
     float len;
 };
 
-void cleanUtils();
+void getUtilsConfig();
 void parseConfig(libconfig::Config& cfg, const char* configPath);
 void resolveOutOfBounds(point& p, int w, int h);
 void resolveVelocity(const glm::vec2& p, glm::vec2& v, const int& height);
