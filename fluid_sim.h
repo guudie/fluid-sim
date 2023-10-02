@@ -10,7 +10,7 @@ struct point;
 
 class renderer;
 class mouse;
-class implicitEuler;
+class ODESolver;
 
 class fluid_sim {
 private:
@@ -18,7 +18,7 @@ private:
     std::vector<point*> points;
     renderer* _renderer = nullptr;
     mouse* _mouse = nullptr;
-    implicitEuler* _integrator;
+    ODESolver* _integrator;
 
     bool running = false;
     bool updateEveryTick;
@@ -63,7 +63,7 @@ public:
     float getRadius() const;
     float getH() const;
 
-    void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, implicitEuler* integrator);
+    void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, ODESolver* integrator);
     void input();
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
     void generateInitialParticles();

@@ -7,7 +7,6 @@
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
 #include "ODE_solvers/implicitEuler.h"
-#include "mouse.h"
 #include "utils.h"
 #include "fluid_sim.h"
 #include "global.h"
@@ -32,7 +31,7 @@ int main() {
     });
 
     fluid_sim* sim = new fluid_sim();
-    sim->setup(cfg, width, height, &_integrator);
+    sim->setup(cfg, width, height, (ODESolver*)&_integrator);
     sim->generateInitialParticles();
 
     Uint32 lastUpd = SDL_GetTicks();
