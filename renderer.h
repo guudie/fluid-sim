@@ -12,8 +12,8 @@ public:
     renderer() = default;
     ~renderer();
 
-    int getWidth() const { return windowWidth; }
-    int getHeight() const { return windowHeight; }
+    int getWidth() const;
+    int getHeight() const;
 
     bool setup(int w = 0, int h = 0);
 

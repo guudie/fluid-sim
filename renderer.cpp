@@ -7,6 +7,14 @@ renderer::~renderer() {
     SDL_Quit();
 }
 
+int renderer::getWidth() const {
+    return windowWidth;
+}
+
+int renderer::getHeight() const {
+    return windowHeight;
+}
+
 bool renderer::setup(int w, int h) {
     if(SDL_Init(SDL_INIT_EVERYTHING) != 0) {
         std::cerr << "Error initializing SDL" << std::endl;
