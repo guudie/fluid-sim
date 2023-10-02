@@ -21,7 +21,6 @@ int main() {
     parseConfig(cfg, generalConfigPath);
     getUtilsConfig();
 
-    float dt = cfg.lookup("dt");
     glm::vec2 G;
     G.x = cfg.lookup("gravity.x");
     G.y = cfg.lookup("gravity.y");
