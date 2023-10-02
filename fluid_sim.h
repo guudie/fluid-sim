@@ -66,6 +66,7 @@ public:
     void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, implicitEuler* integrator);
     void input();
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
+    void generateInitialParticles();
     void calcDensityAndPressure();
     void calcAcceleration();
     void integrateMovements();

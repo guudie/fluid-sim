@@ -104,6 +104,22 @@ void fluid_sim::input() {
             break;
         }
     }
+
+    // additional actions after input check
+    if(_mouse->getRB() && generateCount < 6) {
+        const int genWidth = 150;
+        glm::ivec2 tl = { (_renderer->getWidth() - genWidth) / 2, 100 };
+        glm::ivec2 br = { tl.x + genWidth, 175 };
+        generateParticles(tl, br, h);
+        _mouse->setRB(false);
+        generateCount++;
+    }
+}
+
+void fluid_sim::generateInitialParticles() {
+    glm::ivec2 tl(0, 450);
+    glm::ivec2 br(_renderer->getWidth()-1, _renderer->getHeight()-11);
+    generateParticles(tl, br, h - 0.0001f);
 }
 
 void fluid_sim::generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist) {
