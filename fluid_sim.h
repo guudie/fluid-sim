@@ -13,7 +13,7 @@ class renderer;
 class mouse;
 class ODESolver;
 
-enum parallel_exception {
+enum multithread_exception {
     NONE,
     NAN_DENSITY,
     NAN_PRESSURE,
@@ -31,7 +31,7 @@ private:
     mouse* _mouse = nullptr;
     ODESolver* _integrator;
 
-    parallel_exception par_excpt = parallel_exception::NONE;
+    multithread_exception par_excpt = multithread_exception::NONE;
 
     bool running = false;
 
@@ -84,10 +84,10 @@ public:
     void integrateMovements();
     void update();
 
-    void calcDensityAndPressureParallel();
-    void calcAccelerationParallel();
-    void integrateMovementsParallel();
-    void updateParallel();
+    void calcDensityAndPressureMultithread();
+    void calcAccelerationMultithread();
+    void integrateMovementsMultithread();
+    void updateMultithread();
 
     void render();
     void destroy();

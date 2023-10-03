@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
             try {
                 if(multithread)
-                    sim->updateParallel();
+                    sim->updateMultithread();
                 else
                     sim->update();
             } catch(std::runtime_error& rex) {
