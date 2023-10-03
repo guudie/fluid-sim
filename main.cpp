@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     bool multithread = getOption(argc, argv, 'm');
 
     if(multithread)
-        std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
+        std::cout << "Multithreading enabled\nNo. of parallel threads: " << omp_get_max_threads() << std::endl;
 
     libconfig::Config cfg;
     try {
