@@ -25,6 +25,7 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     _renderer = new renderer();
     _mouse = new mouse();
 
+    tickDuration = cfg.lookup("tick_duration");
     num_iterations = cfg.lookup("num_iterations");
     K = cfg.lookup("K");
     h = cfg.lookup("h");
@@ -54,6 +55,15 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     running = _renderer->setup(windowWidth, windowHeight);
 
     lastUpdateTime = SDL_GetTicks();
+}
+
+bool fluid_sim::checkShouldUpdate() {
+    currentTime = SDL_GetTicks();
+    if(currentTime - lastUpdateTime >= tickDuration) {
+        lastUpdateTime = currentTime;
+        return true;
+    }
+    return false;
 }
 
 void fluid_sim::input() {
@@ -252,8 +262,6 @@ void fluid_sim::update() {
 }
 
 void fluid_sim::render() {
-    if(updateEveryTick && !updatedThisTick)
-        return;
     _renderer->clearScreen(0xFF000816);
 
     for(auto& p : points)
@@ -266,13 +274,8 @@ bool fluid_sim::isRunning() const {
     return running;
 }
 
-bool fluid_sim::isUpdateEveryTick() const {
-    return updateEveryTick;
-}
-
-void fluid_sim::setTickUpdate(bool _updateEveryTick, Uint32 _tickDuration) {
-    updateEveryTick = _updateEveryTick;
-    tickDuration = _tickDuration;
+Uint32 fluid_sim::getTickDuration() const {
+    return tickDuration;
 }
 
 mouse* const& fluid_sim::getMouseObject() const {

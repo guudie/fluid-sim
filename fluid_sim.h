@@ -21,8 +21,6 @@ private:
     ODESolver* _integrator;
 
     bool running = false;
-    bool updateEveryTick;
-    bool updatedThisTick = false;
 
     Uint32 lastUpdateTime;
     Uint32 currentTime;
@@ -51,19 +49,18 @@ private:
     int gridDimY;
 
 public:
-    fluid_sim(bool _updateEveryTick = false, Uint32 _tickDuration = 16) : updateEveryTick(_updateEveryTick), tickDuration(_tickDuration) { }
+    fluid_sim() = default;
     ~fluid_sim() = default;
 
     bool isRunning() const;
-    bool isUpdateEveryTick() const;
-
-    void setTickUpdate(bool _updateEveryTick = false, Uint32 _tickDuration = 16);
+    Uint32 getTickDuration() const;
 
     mouse* const& getMouseObject() const;
     float getRadius() const;
     float getH() const;
 
     void setup(const libconfig::Config& cfg, int windowWidth, int windowHeight, ODESolver* integrator);
+    bool checkShouldUpdate();
     void input();
     void postInput();
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);

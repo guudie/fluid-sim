@@ -38,10 +38,8 @@ int main() {
     sim->setup(cfg, width, height, (ODESolver*)&_integrator);
     sim->generateInitialParticles();
 
-    Uint32 lastUpd = SDL_GetTicks();
     while(sim->isRunning()) {
-        Uint32 curTime = SDL_GetTicks();
-        if(curTime - lastUpd >= 16) {
+        if(sim->checkShouldUpdate()) {
             sim->input();
             sim->postInput();
 
@@ -53,8 +51,6 @@ int main() {
             }
 
             sim->render();
-
-            lastUpd = curTime;
         }
     }
 
