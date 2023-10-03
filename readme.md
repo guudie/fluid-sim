@@ -8,7 +8,7 @@ For windows users, you can skip this section (**Requirements**) and the next one
   * `libconfig` ([hyperrealm.github.io](https://hyperrealm.github.io/libconfig/)), which provides config file parsing
 
 ### Build and run
-With GNU make installed, open cmd/terminal in the `water-sim/` folder and run the command `make`, the output executable with be named `app`. Note that you may need some additional dynamic/shared libraries installed system wide in order to compile and run the app properly.
+With GNU make installed, open cmd/terminal in the `fluid-sim/` folder and run the command `make`, the output executable with be named `app`. Note that you may need some additional dynamic/shared libraries installed system wide in order to compile and run the app properly.
 
 Run `app`.
 
