@@ -19,6 +19,7 @@ struct segment {
     float len;
 };
 
+bool getOption(int argc, char** argv, char opt);
 void getUtilsConfig();
 void parseConfig(libconfig::Config& cfg, const char* configPath);
 void resolveOutOfBounds(point& p, int w, int h);

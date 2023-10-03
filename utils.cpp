@@ -1,6 +1,8 @@
 #include <iostream>
 #include <stdexcept>
 #include <sstream>
+#include <unordered_set>
+#include <unistd.h>
 #include <libconfig.h++>
 #include "utils.h"
 #include "global.h"
@@ -8,6 +10,26 @@
 static libconfig::Config utilsconfig;
 static float bounceCoeff;
 static float groundBounceCoeff;
+
+bool getOption(int argc, char** argv, char opt) {
+    static std::unordered_set<char> opt_set;
+    static bool parsed = false;
+    if(!parsed) {
+        char c;
+        while(true) {
+            switch((c = getopt(argc, argv, argOpts))) {
+            case -1:
+                break;
+            default:
+                opt_set.insert(c);
+                continue;
+            }
+            break;
+        }
+        parsed = true;
+    }
+    return opt_set.find(opt) != opt_set.end();
+}
 
 void getUtilsConfig() {
     parseConfig(utilsconfig, utilsConfigPath);

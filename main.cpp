@@ -11,13 +11,16 @@
 #include "fluid_sim.h"
 #include "global.h"
 
+const char* argOpts = "m";
 const char* generalConfigPath = "config/general.cfg";
 const char* utilsConfigPath = "config/utils.cfg";
 
-int main() {
+int main(int argc, char** argv) {
     const int width = 512, height = 512;
+    bool multithread = getOption(argc, argv, 'm');
 
-    std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
+    if(multithread)
+        std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
 
     libconfig::Config cfg;
     try {
@@ -46,7 +49,10 @@ int main() {
             sim->postInput();
 
             try {
-                sim->updateParallel();
+                if(multithread)
+                    sim->updateParallel();
+                else
+                    sim->update();
             } catch(std::runtime_error& rex) {
                 std::cout << rex.what() << std::endl;
                 break;
