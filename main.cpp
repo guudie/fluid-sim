@@ -20,7 +20,7 @@ int main() {
     const int width = 512, height = 512;
 
     #ifdef MULTITHREAD_ENABLED
-        std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
+        std::cout << "Multithreading enabled\nNo. of parallel threads: " << omp_get_max_threads() << std::endl;
     #endif
 
     libconfig::Config cfg;
