@@ -12,8 +12,10 @@ With GNU make installed, open cmd/terminal in the `water-sim/` folder and run th
 
 Run `app`.
 
+**\*\*Note**: If your processor supports it, you can enable multithreading simulation by running the app from the command line and passing the flag `-m`, i.e., `app -m`.
+
 ### Prebuilt executable (for windows)
-If building the program yourself is not an option, you can unzip `application.zip`, which contains the executable itself (`app.exe`). Similar to compiling the program yourself, you may need some dynamic libraries installed system wide which, hopefully, already came with the operating system. Otherwise, you can download any missing `.dll`s from a Google search.
+If building the program yourself is not an option, you can unzip `application.zip`, which contains the executable itself (`app.exe`) which can also be run with multithreading enabled. Similar to compiling the program yourself, you may need some dynamic libraries installed system wide which, hopefully, already came with the operating system. Otherwise, you can download any missing `.dll`s from a Google search.
 
 ### Interactions
 Move the particles with the cursor by holding left mouse button. Add more particles by clicking right mouse button (this can be done at most 6 times).
