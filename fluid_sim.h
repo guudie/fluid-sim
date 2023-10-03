@@ -91,10 +91,10 @@ public:
     void update();
 
     #ifdef MULTITHREAD_ENABLED
-        void calcDensityAndPressureParallel();
-        void calcAccelerationParallel();
-        void integrateMovementsParallel();
-        void updateParallel();
+        void calcDensityAndPressureMultithread();
+        void calcAccelerationMultithread();
+        void integrateMovementsMultithread();
+        void updateMultithread();
     #endif
 
     void render();

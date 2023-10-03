@@ -295,7 +295,7 @@ void fluid_sim::integrateMovements() {
 }
 
 #ifdef MULTITHREAD_ENABLED
-void fluid_sim::calcDensityAndPressureParallel() {
+void fluid_sim::calcDensityAndPressureMultithread() {
     #pragma omp parallel for collapse(2)
     for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
         for(auto& p : grid[r][c]) {
@@ -333,7 +333,7 @@ void fluid_sim::calcDensityAndPressureParallel() {
     }
 }
 
-void fluid_sim::calcAccelerationParallel() {
+void fluid_sim::calcAccelerationMultithread() {
     #pragma omp parallel for collapse(2)
     for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
         for(auto& p : grid[r][c]) {
@@ -376,7 +376,7 @@ void fluid_sim::calcAccelerationParallel() {
     }
 }
 
-void fluid_sim::integrateMovementsParallel() {
+void fluid_sim::integrateMovementsMultithread() {
     #pragma omp parallel for
     for(auto& p : points) {
         // _integrator.integrate(p->pos, p->vel, p->acc, dt);
@@ -436,19 +436,19 @@ void fluid_sim::update() {
 }
 
 #ifdef MULTITHREAD_ENABLED
-void fluid_sim::updateParallel() {
+void fluid_sim::updateMultithread() {
     for(int i = 0; i < num_iterations; i++) {
-        calcDensityAndPressureParallel();
+        calcDensityAndPressureMultithread();
         if(multi_excpt != multithread_exception::NONE) {
             throw std::runtime_error(getErrorMessage(multi_excpt));
         }
 
-        calcAccelerationParallel();
+        calcAccelerationMultithread();
         if(multi_excpt != multithread_exception::NONE) {
             throw std::runtime_error(getErrorMessage(multi_excpt));
         }
 
-        integrateMovementsParallel();
+        integrateMovementsMultithread();
         if(multi_excpt != multithread_exception::NONE) {
             throw std::runtime_error(getErrorMessage(multi_excpt));
         }

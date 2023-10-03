@@ -51,7 +51,7 @@ int main() {
 
             try {
                 #ifdef MULTITHREAD_ENABLED
-                    sim->updateParallel();
+                    sim->updateMultithread();
                 #else
                     sim->update();
                 #endif

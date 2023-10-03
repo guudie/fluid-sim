@@ -13,7 +13,7 @@ SUBDIRS = ODE_solvers
 ARGS = -O2
 GCC = g++
 
-MULTITHREAD = false
+MULTITHREAD = true
 MULTITHREADFLAG =
 NAMEAPPENDIX =
 ifeq ($(MULTITHREAD), true)
