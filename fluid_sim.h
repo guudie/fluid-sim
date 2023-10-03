@@ -1,5 +1,7 @@
 #pragma once
+#ifdef MULTITHREAD_ENABLED
 #include <omp.h>
+#endif
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <vector>
@@ -13,7 +15,7 @@ class renderer;
 class mouse;
 class ODESolver;
 
-enum parallel_exception {
+enum multithread_exception {
     NONE,
     NAN_DENSITY,
     NAN_PRESSURE,
@@ -26,12 +28,16 @@ class fluid_sim {
 private:
     std::unordered_set<point*>** grid;
     std::vector<point*> points;
-    omp_lock_t** gridLock;
+
+    #ifdef MULTITHREAD_ENABLED
+        omp_lock_t** gridLock;
+    #endif
+
     renderer* _renderer = nullptr;
     mouse* _mouse = nullptr;
     ODESolver* _integrator;
 
-    parallel_exception par_excpt = parallel_exception::NONE;
+    multithread_exception multi_excpt = multithread_exception::NONE;
 
     bool running = false;
 
@@ -84,10 +90,12 @@ public:
     void integrateMovements();
     void update();
 
-    void calcDensityAndPressureParallel();
-    void calcAccelerationParallel();
-    void integrateMovementsParallel();
-    void updateParallel();
+    #ifdef MULTITHREAD_ENABLED
+        void calcDensityAndPressureParallel();
+        void calcAccelerationParallel();
+        void integrateMovementsParallel();
+        void updateParallel();
+    #endif
 
     void render();
     void destroy();

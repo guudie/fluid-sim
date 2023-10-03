@@ -1,8 +1,10 @@
 #define SDL_MAIN_HANDLED
+#ifdef MULTITHREAD_ENABLED
+#include <omp.h>
+#endif
 #include <iostream>
 #include <stdexcept>
 #include <SDL2/SDL.h>
-#include <omp.h>
 #include <libconfig.h++>
 #include "glm/glm.hpp"
 #include "glm/gtx/string_cast.hpp"
@@ -17,7 +19,9 @@ const char* utilsConfigPath = "config/utils.cfg";
 int main() {
     const int width = 512, height = 512;
 
-    std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
+    #ifdef MULTITHREAD_ENABLED
+        std::cout << "Number of parallel threads: " << omp_get_max_threads() << std::endl;
+    #endif
 
     libconfig::Config cfg;
     try {
@@ -46,7 +50,11 @@ int main() {
             sim->postInput();
 
             try {
-                sim->updateParallel();
+                #ifdef MULTITHREAD_ENABLED
+                    sim->updateParallel();
+                #else
+                    sim->update();
+                #endif
             } catch(std::runtime_error& rex) {
                 std::cout << rex.what() << std::endl;
                 break;

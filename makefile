@@ -13,7 +13,13 @@ SUBDIRS = ODE_solvers
 ARGS = -O2
 GCC = g++
 
-OMP = -fopenmp
+MULTITHREAD = false
+MULTITHREADFLAG =
+NAMEAPPENDIX =
+ifeq ($(MULTITHREAD), true)
+	MULTITHREADFLAG = -DMULTITHREAD_ENABLED -fopenmp
+	NAMEAPPENDIX = _multithread
+endif
 LIBS = `sdl2-config --libs` -lconfig++
 LCFGFLAG =
 STATICLINK = false
@@ -21,9 +27,9 @@ ifeq ($(STATICLINK), true)
 	LIBS = `sdl2-config --static-libs` -lconfig++ --static
 	LCFGFLAG = -DLIBCONFIGXX_STATIC
 endif
-CFLAGS = $(WINOPT) $(OMP) -O2 -Wall -lm $(LIBS)
+CFLAGS = $(WINOPT) $(MULTITHREADFLAG) -O2 -Wall -lm $(LIBS)
 
-all: subdirs renderer.o mouse.o utils.o fluid_sim.o main.o app$(EXT)
+all: subdirs renderer.o mouse.o utils.o fluid_sim$(NAMEAPPENDIX).o main$(NAMEAPPENDIX).o app$(NAMEAPPENDIX)$(EXT)
 clean:
 	-rm *.o *.exe; \
 	for dir in $(SUBDIRS); do \
@@ -44,11 +50,11 @@ mouse.o: mouse.h mouse.cpp
 utils.o: utils.h utils.cpp global.h
 	$(GCC) $(ARGS) $(LCFGFLAG) -c utils.cpp -o utils.o
 
-fluid_sim.o: fluid_sim.h fluid_sim.cpp renderer.h mouse.h utils.h ./ODE_solvers/ODESolver.h
-	$(GCC) $(ARGS) $(LCFGFLAG) $(OMP) -c fluid_sim.cpp -o fluid_sim.o
+fluid_sim$(NAMEAPPENDIX).o: fluid_sim.h fluid_sim.cpp renderer.h mouse.h utils.h ./ODE_solvers/ODESolver.h
+	$(GCC) $(ARGS) $(LCFGFLAG) $(MULTITHREADFLAG) -c fluid_sim.cpp -o $@
 
-main.o: main.cpp renderer.h mouse.h utils.h fluid_sim.h ./ODE_solvers/implicitEuler.h global.h
-	$(GCC) $(ARGS) $(LCFGFLAG) $(OMP) -c main.cpp -o main.o
+main$(NAMEAPPENDIX).o: main.cpp renderer.h mouse.h utils.h fluid_sim.h ./ODE_solvers/implicitEuler.h global.h
+	$(GCC) $(ARGS) $(LCFGFLAG) $(MULTITHREADFLAG) -c main.cpp -o $@
 
-app$(EXT): main.o renderer.o mouse.o utils.o fluid_sim.o ./ODE_solvers/ode_joined.o
+app$(NAMEAPPENDIX)$(EXT): main$(NAMEAPPENDIX).o renderer.o mouse.o utils.o fluid_sim$(NAMEAPPENDIX).o ./ODE_solvers/ode_joined.o
 	$(GCC) -o $@ $^ $(CFLAGS)

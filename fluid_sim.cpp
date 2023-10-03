@@ -17,21 +17,21 @@
     NAN_POS,
     IDX_OUT_OF_RANGE
 */
-const char* getErrorMessage(const parallel_exception& err) {
+const char* getErrorMessage(const multithread_exception& err) {
     switch(err) {
-    case parallel_exception::NAN_DENSITY:
+    case multithread_exception::NAN_DENSITY:
         return "Nan encountered in density";
         break;
-    case parallel_exception::NAN_PRESSURE:
+    case multithread_exception::NAN_PRESSURE:
         return "Nan encountered in pressure";
         break;
-    case parallel_exception::NAN_ACC:
+    case multithread_exception::NAN_ACC:
         return "Nan encountered in acc";
         break;
-    case parallel_exception::NAN_POS:
+    case multithread_exception::NAN_POS:
         return "Nan encountered in position";
         break;
-    case parallel_exception::IDX_OUT_OF_RANGE:
+    case multithread_exception::IDX_OUT_OF_RANGE:
         return "Index out of range";
         break;
     default:
@@ -80,13 +80,18 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     gridDimY = windowHeight / cellSize;
 
     grid = new std::unordered_set<point*>*[gridDimY];
-    gridLock = new omp_lock_t*[gridDimY];
     for(int i = 0; i < gridDimY; i++) {
         grid[i] = new std::unordered_set<point*>[gridDimX];
-        gridLock[i] = new omp_lock_t[gridDimX];
-        for(int j = 0; j < gridDimX; j++)
-            omp_init_lock(&gridLock[i][j]);
     }
+
+    #ifdef MULTITHREAD_ENABLED
+        gridLock = new omp_lock_t*[gridDimY];
+        for(int i = 0; i < gridDimY; i++) {
+            gridLock[i] = new omp_lock_t[gridDimX];
+            for(int j = 0; j < gridDimX; j++)
+                omp_init_lock(&gridLock[i][j]);
+        }
+    #endif
 
     running = _renderer->setup(windowWidth, windowHeight);
 
@@ -289,6 +294,7 @@ void fluid_sim::integrateMovements() {
     }
 }
 
+#ifdef MULTITHREAD_ENABLED
 void fluid_sim::calcDensityAndPressureParallel() {
     #pragma omp parallel for collapse(2)
     for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
@@ -309,8 +315,8 @@ void fluid_sim::calcDensityAndPressureParallel() {
             }
             #pragma omp critical(check_nan_density)
             {
-                if(par_excpt == parallel_exception::NONE && isnan(p->density)) {
-                    par_excpt = parallel_exception::NAN_DENSITY;
+                if(multi_excpt == multithread_exception::NONE && isnan(p->density)) {
+                    multi_excpt = multithread_exception::NAN_DENSITY;
                 }
             }
             p->density = std::max(p0, p->density);
@@ -319,8 +325,8 @@ void fluid_sim::calcDensityAndPressureParallel() {
             p->pressure = K * (p->density - p0);
             #pragma omp critical(check_nan_pressure)
             {
-                if(par_excpt == parallel_exception::NONE && isnan(p->pressure)) {
-                    par_excpt = parallel_exception::NAN_PRESSURE;
+                if(multi_excpt == multithread_exception::NONE && isnan(p->pressure)) {
+                    multi_excpt = multithread_exception::NAN_PRESSURE;
                 }
             }
         }
@@ -361,8 +367,8 @@ void fluid_sim::calcAccelerationParallel() {
             }
             #pragma omp critical(check_nan_acc)
             {
-                if(par_excpt == parallel_exception::NONE && (isnan(p->acc.x) || isnan(p->acc.y))) {
-                    par_excpt = parallel_exception::NAN_ACC;
+                if(multi_excpt == multithread_exception::NONE && (isnan(p->acc.x) || isnan(p->acc.y))) {
+                    multi_excpt = multithread_exception::NAN_ACC;
                 }
             }
             // capMagnitude(p->acc, 0.5f);
@@ -389,8 +395,8 @@ void fluid_sim::integrateMovementsParallel() {
 
         #pragma omp critical(check_nan_pos)
         {
-            if(par_excpt == parallel_exception::NONE && (isnan(p->pos.x) || isnan(p->pos.y))) {
-                par_excpt = parallel_exception::NAN_POS;
+            if(multi_excpt == multithread_exception::NONE && (isnan(p->pos.x) || isnan(p->pos.y))) {
+                multi_excpt = multithread_exception::NAN_POS;
             }
         }
         glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
@@ -398,8 +404,8 @@ void fluid_sim::integrateMovementsParallel() {
             if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
                 #pragma omp critical(check_idx_oor)
                 {
-                    if(par_excpt == parallel_exception::NONE) {
-                        par_excpt = parallel_exception::IDX_OUT_OF_RANGE;
+                    if(multi_excpt == multithread_exception::NONE) {
+                        multi_excpt = multithread_exception::IDX_OUT_OF_RANGE;
                     }
                 }
             } else {
@@ -419,6 +425,7 @@ void fluid_sim::integrateMovementsParallel() {
         }
     }
 }
+#endif
 
 void fluid_sim::update() {
     for(int i = 0; i < num_iterations; i++) {
@@ -428,24 +435,26 @@ void fluid_sim::update() {
     }
 }
 
+#ifdef MULTITHREAD_ENABLED
 void fluid_sim::updateParallel() {
     for(int i = 0; i < num_iterations; i++) {
         calcDensityAndPressureParallel();
-        if(par_excpt != parallel_exception::NONE) {
-            throw std::runtime_error(getErrorMessage(par_excpt));
+        if(multi_excpt != multithread_exception::NONE) {
+            throw std::runtime_error(getErrorMessage(multi_excpt));
         }
 
         calcAccelerationParallel();
-        if(par_excpt != parallel_exception::NONE) {
-            throw std::runtime_error(getErrorMessage(par_excpt));
+        if(multi_excpt != multithread_exception::NONE) {
+            throw std::runtime_error(getErrorMessage(multi_excpt));
         }
 
         integrateMovementsParallel();
-        if(par_excpt != parallel_exception::NONE) {
-            throw std::runtime_error(getErrorMessage(par_excpt));
+        if(multi_excpt != multithread_exception::NONE) {
+            throw std::runtime_error(getErrorMessage(multi_excpt));
         }
     }
 }
+#endif
 
 void fluid_sim::render() {
     _renderer->clearScreen(0xFF000816);
@@ -477,15 +486,19 @@ float fluid_sim::getH() const {
 }
 
 void fluid_sim::destroy() {
-    for(int i = 0; i < gridDimY; i++) for(int j = 0; j < gridDimX; j++)
-        omp_destroy_lock(&gridLock[i][j]);
+    #ifdef MULTITHREAD_ENABLED
+        for(int i = 0; i < gridDimY; i++) {
+            for(int j = 0; j < gridDimX; j++) {
+                omp_destroy_lock(&gridLock[i][j]);
+            }
+            delete[] gridLock[i];
+        }
+        delete[] gridLock;
+    #endif
     
-    for(int i = 0; i < gridDimY; i++) {
+    for(int i = 0; i < gridDimY; i++)
         delete[] grid[i];
-        delete[] gridLock[i];
-    }
     delete[] grid;
-    delete[] gridLock;
 
     for(auto& p : points)
         delete p;
