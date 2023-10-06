@@ -98,6 +98,8 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
 bool fluid_sim::checkShouldUpdate() {
     currentTime = SDL_GetTicks();
     if(currentTime - lastUpdateTime >= tickDuration) {
+        // if(showFrameTime)
+        //     std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
         lastUpdateTime = currentTime;
         return true;
     }
@@ -469,6 +471,10 @@ bool fluid_sim::isRunning() const {
 
 Uint32 fluid_sim::getTickDuration() const {
     return tickDuration;
+}
+
+void fluid_sim::setShowFrameTime(bool ft) {
+    showFrameTime = ft;
 }
 
 mouse* const& fluid_sim::getMouseObject() const {

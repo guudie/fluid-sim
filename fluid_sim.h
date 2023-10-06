@@ -38,6 +38,7 @@ private:
     Uint32 lastUpdateTime;
     Uint32 currentTime;
     Uint32 tickDuration;
+    bool showFrameTime = false;
 
     int generateCount = 0;
     int maxGenerateCount = 6;
@@ -68,6 +69,8 @@ public:
 
     bool isRunning() const;
     Uint32 getTickDuration() const;
+
+    void setShowFrameTime(bool ft);
 
     mouse* const& getMouseObject() const;
     float getRadius() const;
