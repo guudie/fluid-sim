@@ -311,22 +311,24 @@ void fluid_sim::calcDensityAndPressureMultithread() {
                     }
                 }
             }
-            #pragma omp critical(check_nan_density)
-            {
-                if(par_excpt == multithread_exception::NONE && isnan(p->density)) {
-                    par_excpt = multithread_exception::NAN_DENSITY;
-                }
+            #pragma omp flush
+            #pragma omp atomic update compare
+            if(par_excpt == multithread_exception::NONE) {
+                par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_DENSITY * isnan(p->density));
             }
+            #pragma omp flush
+
             p->density = std::max(p0, p->density);
 
             // pressure
             p->pressure = K * (p->density - p0);
-            #pragma omp critical(check_nan_pressure)
-            {
-                if(par_excpt == multithread_exception::NONE && isnan(p->pressure)) {
-                    par_excpt = multithread_exception::NAN_PRESSURE;
-                }
+
+            #pragma omp flush
+            #pragma omp atomic update compare
+            if(par_excpt == multithread_exception::NONE) {
+                par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_PRESSURE * isnan(p->pressure));
             }
+            #pragma omp flush
         }
     }
 }
@@ -363,12 +365,12 @@ void fluid_sim::calcAccelerationMultithread() {
                     p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                 }
             }
-            #pragma omp critical(check_nan_acc)
-            {
-                if(par_excpt == multithread_exception::NONE && (isnan(p->acc.x) || isnan(p->acc.y))) {
-                    par_excpt = multithread_exception::NAN_ACC;
-                }
+            #pragma omp flush
+            #pragma omp atomic update compare
+            if(par_excpt == multithread_exception::NONE) {
+                par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_ACC * (isnan(p->acc.x) || isnan(p->acc.y)));
             }
+            #pragma omp flush
             // capMagnitude(p->acc, 0.5f);
         }
     }
@@ -391,21 +393,22 @@ void fluid_sim::integrateMovementsMultithread() {
         _integrator->integrateStep2(p->pos, p->vel, dt);
         resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
 
-        #pragma omp critical(check_nan_pos)
-        {
-            if(par_excpt == multithread_exception::NONE && (isnan(p->pos.x) || isnan(p->pos.y))) {
-                par_excpt = multithread_exception::NAN_POS;
-            }
+        #pragma omp flush
+        #pragma omp atomic update compare
+        if(par_excpt == multithread_exception::NONE) {
+            par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_POS * (isnan(p->pos.x) || isnan(p->pos.y)));
         }
+        #pragma omp flush
+
         glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
         if(p->gridIdx != newIdx) {
             if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
-                #pragma omp critical(check_idx_oor)
-                {
-                    if(par_excpt == multithread_exception::NONE) {
-                        par_excpt = multithread_exception::IDX_OUT_OF_RANGE;
-                    }
+                #pragma omp flush
+                #pragma omp atomic update compare
+                if(par_excpt == multithread_exception::NONE) {
+                    par_excpt = multithread_exception::IDX_OUT_OF_RANGE;
                 }
+                #pragma omp flush
             } else {
                 // erase p from grid[p->gridIdx.y][p->gridIdx.x]
                 omp_set_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
