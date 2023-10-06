@@ -58,6 +58,7 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
 
     tickDuration = cfg.lookup("tick_duration");
     num_iterations = cfg.lookup("num_iterations");
+    max_particles = cfg.lookup("max_particles");
     K = cfg.lookup("K");
     h = cfg.lookup("h");
     h2 = h * h;
@@ -87,6 +88,7 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
         for(int j = 0; j < gridDimX; j++)
             omp_init_lock(&gridLock[i][j]);
     }
+    points.reserve(max_particles);
 
     running = _renderer->setup(windowWidth, windowHeight);
 
@@ -154,7 +156,7 @@ void fluid_sim::input() {
 }
 
 void fluid_sim::postInput() {
-    if(_mouse->getRB() && generateCount < 6) {
+    if(_mouse->getRB() && generateCount < maxGenerateCount) {
         const int genWidth = 150;
         glm::ivec2 tl = { (_renderer->getWidth() - genWidth) / 2, 100 };
         glm::ivec2 br = { tl.x + genWidth, 175 };
@@ -173,6 +175,8 @@ void fluid_sim::generateInitialParticles() {
 void fluid_sim::generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist) {
     for(int r = from.y; r < to.y; r += dist) {
         for(int c = from.x; c < to.x; c += dist) {
+            if(points.size() == max_particles)
+                return;
             point* p = new point {
                 { c, r },
                 { rand() % 1, 0 },
@@ -182,7 +186,7 @@ void fluid_sim::generateParticles(const glm::ivec2& from, const glm::ivec2& to, 
                 0.0f,
                 false
             };
-            points.push_back(p);
+            points.emplace_back(p);
             grid[p->gridIdx.y][p->gridIdx.x].insert(p);
         }
     }

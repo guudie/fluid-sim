@@ -44,6 +44,7 @@ private:
     float dt = 1.0f;
     float radius = 4.0f;
     int num_iterations;
+    int max_particles;
     float K;
     float h;
     float h2;
