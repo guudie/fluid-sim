@@ -17,7 +17,7 @@
     NAN_POS,
     IDX_OUT_OF_RANGE
 */
-const char* getErrorMessage(const multithread_exception& err) {
+static const char* getErrorMessage(const multithread_exception& err) {
     switch(err) {
     case multithread_exception::NAN_DENSITY:
         return "Nan encountered in density";
