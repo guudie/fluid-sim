@@ -1,2 +1,2 @@
 [ ] reorganize code
-[ ] implement better multithread exception handling using reduction
+[✓] implement better multithread exception handling using reduction

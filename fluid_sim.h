@@ -15,11 +15,11 @@ class ODESolver;
 
 enum multithread_exception {
     NONE,
-    NAN_DENSITY,
-    NAN_PRESSURE,
-    NAN_ACC,
+    IDX_OUT_OF_RANGE,
     NAN_POS,
-    IDX_OUT_OF_RANGE
+    NAN_ACC,
+    NAN_PRESSURE,
+    NAN_DENSITY
 };
 
 class fluid_sim {
@@ -31,8 +31,7 @@ private:
     mouse* _mouse = nullptr;
     ODESolver* _integrator;
 
-    int num_threads;
-    multithread_exception* mt_excpt;
+    multithread_exception mt_excpt = multithread_exception::NONE;
 
     bool running = false;
 

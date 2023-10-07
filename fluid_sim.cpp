@@ -40,12 +40,6 @@ static const char* getErrorMessage(const multithread_exception& err) {
     }
 }
 
-static void getErrorMessageAllThreads(const multithread_exception* const& mt_excpt, int num_threads) {
-    for(int i = 0; i < num_threads; i++)
-        if(mt_excpt[i] != multithread_exception::NONE)
-            throw std::runtime_error(getErrorMessage(mt_excpt[i]));
-}
-
 static void capMagnitude(glm::vec2& v, float maxMag) {
     float len = glm::length(v);
     if(len < EPS) {
@@ -96,10 +90,6 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     }
     points.reserve(max_particles);
 
-    num_threads = omp_get_max_threads();
-    mt_excpt = new multithread_exception[num_threads];
-    std::fill(mt_excpt, mt_excpt+num_threads, multithread_exception::NONE);
-
     running = _renderer->setup(windowWidth, windowHeight);
 
     lastUpdateTime = SDL_GetTicks();
@@ -108,8 +98,8 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
 bool fluid_sim::checkShouldUpdate() {
     currentTime = SDL_GetTicks();
     if(currentTime - lastUpdateTime >= tickDuration) {
-        if(showFrameTime)
-            std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
+        // if(showFrameTime)
+        //     std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
         lastUpdateTime = currentTime;
         return true;
     }
@@ -300,120 +290,140 @@ void fluid_sim::integrateMovements() {
 }
 
 void fluid_sim::calcDensityAndPressureMultithread() {
-    #pragma omp parallel for collapse(2)
-    for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
-        for(auto& p : grid[r][c]) {
-            // density
-            p->density = 0;
-            const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
-            const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
-            for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
-                for(auto& q : grid[ir][ic]) {
-                    const glm::vec2 diff = p->pos - q->pos;
-                    const float r2 = glm::dot(diff, diff);
-                    if(r2 < h2) {
-                        const float W = poly6_coeff * (h2 - r2) * (h2 - r2) * (h2 - r2);
-                        p->density += mass * W;
+    #pragma omp parallel
+    {
+        multithread_exception mt_excpt_thread = NONE;
+
+        #pragma omp for collapse(2)
+        for(int r = 0; r < gridDimY; r++) for(int c = 0; c < gridDimX; c++) {
+            for(auto& p : grid[r][c]) {
+                // density
+                p->density = 0;
+                const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
+                const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
+                for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+                    for(auto& q : grid[ir][ic]) {
+                        const glm::vec2 diff = p->pos - q->pos;
+                        const float r2 = glm::dot(diff, diff);
+                        if(r2 < h2) {
+                            const float W = poly6_coeff * (h2 - r2) * (h2 - r2) * (h2 - r2);
+                            p->density += mass * W;
+                        }
                     }
                 }
+                mt_excpt_thread = (isnan(p->density) && (mt_excpt_thread == NONE)) ? NAN_DENSITY : mt_excpt_thread;
+
+                p->density = std::max(p0, p->density);
+
+                // pressure
+                p->pressure = K * (p->density - p0);
+
+                mt_excpt_thread = (isnan(p->pressure) && (mt_excpt_thread == NONE)) ? NAN_PRESSURE : mt_excpt_thread;
             }
-            mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
-                isnan(p->density) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_DENSITY
-            );
+        }
 
-            p->density = std::max(p0, p->density);
-
-            // pressure
-            p->pressure = K * (p->density - p0);
-
-            mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
-                isnan(p->pressure) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_PRESSURE
-            );
+        #pragma omp reduction(max:mt_excpt)
+        {
+            mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
 }
 
 void fluid_sim::calcAccelerationMultithread() {
-    #pragma omp parallel for collapse(2)
-    for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
-        for(auto& p : grid[r][c]) {
-            p->acc = { 0, 0 };
-            const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
-            const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
-            for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
-                for(auto& q : grid[ir][ic]) {
-                    if(q == p)
-                        continue;
-                    const glm::vec2 diff = p->pos - q->pos;
-                    const float r2 = glm::dot(diff, diff);
-                    const float r = sqrt(r2);
+    #pragma omp parallel 
+    {
+        multithread_exception mt_excpt_thread = NONE;
+        
+        #pragma omp for collapse(2)
+        for(int r = 0; r < gridDimY; r++) for(int c = 0; c < gridDimX; c++) {
+            for(auto& p : grid[r][c]) {
+                p->acc = { 0, 0 };
+                const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
+                const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
+                for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+                    for(auto& q : grid[ir][ic]) {
+                        if(q == p)
+                            continue;
+                        const glm::vec2 diff = p->pos - q->pos;
+                        const float r2 = glm::dot(diff, diff);
+                        const float r = sqrt(r2);
 
-                    if(r > EPS && r < h) {
-                        const float W_spiky = spiky_coeff * (h - r) * (h - r);
-                        const float W_lap = viscosity_lap_coeff * (h - r);
-                        p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
-                        p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
+                        if(r > EPS && r < h) {
+                            const float W_spiky = spiky_coeff * (h - r) * (h - r);
+                            const float W_lap = viscosity_lap_coeff * (h - r);
+                            p->acc -= (mass / mass) * ((p->pressure + q->pressure) / (2.0f * p->density * q->density)) * W_spiky * (diff / r);
+                            p->acc += e * (mass / mass) * (1.0f / q->density) * (q->vel - p->vel) * W_lap;
+                        }
                     }
                 }
-            }
-            if(p->pos.y >= _renderer->getHeight()-11) {
-                const glm::vec2 diff = { 0, p->pos.y - _renderer->getHeight() + 11 - h };
-                const float r2 = glm::dot(diff, diff);
-                const float r = sqrt(r2);
-                if(r > EPS && r < h) {
-                    const float W_spiky = spiky_coeff * (h - r) * (h - r);
-                    p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
+                if(p->pos.y >= _renderer->getHeight()-11) {
+                    const glm::vec2 diff = { 0, p->pos.y - _renderer->getHeight() + 11 - h };
+                    const float r2 = glm::dot(diff, diff);
+                    const float r = sqrt(r2);
+                    if(r > EPS && r < h) {
+                        const float W_spiky = spiky_coeff * (h - r) * (h - r);
+                        p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
+                    }
                 }
+                mt_excpt_thread = ((isnan(p->acc.x) || isnan(p->acc.y)) && (mt_excpt_thread == NONE)) ? NAN_ACC : mt_excpt_thread;
+                // capMagnitude(p->acc, 0.5f);
             }
-            mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
-                (isnan(p->acc.x) || isnan(p->acc.y)) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_ACC
-            );
-            // capMagnitude(p->acc, 0.5f);
+        }
+
+        #pragma omp reduction(max:mt_excpt)
+        {
+            mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
 }
 
 void fluid_sim::integrateMovementsMultithread() {
-    #pragma omp parallel for
-    for(auto& p : points) {
-        // _integrator.integrate(p->pos, p->vel, p->acc, dt);
-
-        // calculate velocity
-        if(_mouse->getLB()) {
-            glm::vec2 toMouse = _mouse->getPos() - p->pos;
-            if(glm::dot(toMouse, toMouse) < 32 * 32)
-                p->vel += mouse_coeff * _mouse->getDiff();
-        }
-        _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
-        capMagnitude(p->vel, max_vel);
+    #pragma omp parallel 
+    {
+        multithread_exception mt_excpt_thread = NONE;
         
-        _integrator->integrateStep2(p->pos, p->vel, dt);
-        resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
+        #pragma omp for
+        for(auto& p : points) {
+            // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
-        mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
-            (isnan(p->pos.x) || isnan(p->pos.y)) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_POS
-        );
-
-        glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
-        if(p->gridIdx != newIdx) {
-            if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
-                mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
-                    (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::IDX_OUT_OF_RANGE
-                );
-            } else {
-                // erase p from grid[p->gridIdx.y][p->gridIdx.x]
-                omp_set_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
-                grid[p->gridIdx.y][p->gridIdx.x].erase(p);
-                omp_unset_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
-
-                // insert p into grid[newIdx.y][newIdx.x]
-                omp_set_lock(&gridLock[newIdx.y][newIdx.x]);
-                grid[newIdx.y][newIdx.x].insert(p);
-                omp_unset_lock(&gridLock[newIdx.y][newIdx.x]);
-
-                // update grid index of p
-                p->gridIdx = newIdx;
+            // calculate velocity
+            if(_mouse->getLB()) {
+                glm::vec2 toMouse = _mouse->getPos() - p->pos;
+                if(glm::dot(toMouse, toMouse) < 32 * 32)
+                    p->vel += mouse_coeff * _mouse->getDiff();
             }
+            _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
+            capMagnitude(p->vel, max_vel);
+            
+            _integrator->integrateStep2(p->pos, p->vel, dt);
+            resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
+
+            mt_excpt_thread = ((isnan(p->pos.x) || isnan(p->pos.y)) && (mt_excpt_thread == NONE)) ? NAN_POS : mt_excpt_thread;
+
+            glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
+            if(p->gridIdx != newIdx) {
+                if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
+                    mt_excpt_thread = IDX_OUT_OF_RANGE;
+                } else {
+                    // erase p from grid[p->gridIdx.y][p->gridIdx.x]
+                    omp_set_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
+                    grid[p->gridIdx.y][p->gridIdx.x].erase(p);
+                    omp_unset_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
+
+                    // insert p into grid[newIdx.y][newIdx.x]
+                    omp_set_lock(&gridLock[newIdx.y][newIdx.x]);
+                    grid[newIdx.y][newIdx.x].insert(p);
+                    omp_unset_lock(&gridLock[newIdx.y][newIdx.x]);
+
+                    // update grid index of p
+                    p->gridIdx = newIdx;
+                }
+            }
+        }
+
+        #pragma omp reduction(max:mt_excpt)
+        {
+            mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
 }
@@ -429,13 +439,19 @@ void fluid_sim::update() {
 void fluid_sim::updateMultithread() {
     for(int i = 0; i < num_iterations; i++) {
         calcDensityAndPressureMultithread();
-        getErrorMessageAllThreads(mt_excpt, num_threads);
+        if(mt_excpt != NONE) {
+            throw std::runtime_error(getErrorMessage(mt_excpt));
+        }
 
         calcAccelerationMultithread();
-        getErrorMessageAllThreads(mt_excpt, num_threads);
+        if(mt_excpt != NONE) {
+            throw std::runtime_error(getErrorMessage(mt_excpt));
+        }
 
         integrateMovementsMultithread();
-        getErrorMessageAllThreads(mt_excpt, num_threads);
+        if(mt_excpt != NONE) {
+            throw std::runtime_error(getErrorMessage(mt_excpt));
+        }
     }
 }
 
@@ -482,8 +498,6 @@ void fluid_sim::destroy() {
     }
     delete[] grid;
     delete[] gridLock;
-
-    delete[] mt_excpt;
 
     for(auto& p : points)
         delete p;
