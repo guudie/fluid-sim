@@ -31,7 +31,7 @@ private:
     mouse* _mouse = nullptr;
     ODESolver* _integrator;
 
-    multithread_exception mt_excpt = multithread_exception::NONE;
+    multithread_exception mt_excpt = NONE;
 
     bool running = false;
 
