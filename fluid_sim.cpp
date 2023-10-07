@@ -126,30 +126,24 @@ void fluid_sim::input() {
         case SDL_MOUSEBUTTONDOWN:
             SDL_GetMouseState(&x, &y);
             _mouse->updatePos(x, y);
-            if (!_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) 
-            {
+            if (!_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) {
                 _mouse->setLB(true);
             }
-            if (!_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) 
-            {
+            if (!_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) {
                 _mouse->setRB(true);
             }
-            if (!_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) 
-            {
+            if (!_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) {
                 _mouse->setSBX2(true);
             }
             break;
         case SDL_MOUSEBUTTONUP: 
-            if (_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT)
-            {
+            if (_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) {
                 _mouse->setLB(false);
             }
-            if (_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT)
-            {
+            if (_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) {
                 _mouse->setRB(false);
             }
-            if (_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) 
-            {
+            if (_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) {
                 _mouse->setSBX2(false);
             }
             break;
