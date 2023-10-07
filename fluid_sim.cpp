@@ -40,6 +40,12 @@ static const char* getErrorMessage(const multithread_exception& err) {
     }
 }
 
+static void getErrorMessageAllThreads(const multithread_exception* const& mt_excpt, int num_threads) {
+    for(int i = 0; i < num_threads; i++)
+        if(mt_excpt[i] != multithread_exception::NONE)
+            throw std::runtime_error(getErrorMessage(mt_excpt[i]));
+}
+
 static void capMagnitude(glm::vec2& v, float maxMag) {
     float len = glm::length(v);
     if(len < EPS) {
@@ -90,6 +96,10 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     }
     points.reserve(max_particles);
 
+    num_threads = omp_get_max_threads();
+    mt_excpt = new multithread_exception[num_threads];
+    std::fill(mt_excpt, mt_excpt+num_threads, multithread_exception::NONE);
+
     running = _renderer->setup(windowWidth, windowHeight);
 
     lastUpdateTime = SDL_GetTicks();
@@ -98,8 +108,8 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
 bool fluid_sim::checkShouldUpdate() {
     currentTime = SDL_GetTicks();
     if(currentTime - lastUpdateTime >= tickDuration) {
-        // if(showFrameTime)
-        //     std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
+        if(showFrameTime)
+            std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
         lastUpdateTime = currentTime;
         return true;
     }
@@ -307,24 +317,18 @@ void fluid_sim::calcDensityAndPressureMultithread() {
                     }
                 }
             }
-            #pragma omp flush
-            #pragma omp atomic update compare
-            if(par_excpt == multithread_exception::NONE) {
-                par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_DENSITY * isnan(p->density));
-            }
-            #pragma omp flush
+            mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
+                isnan(p->density) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_DENSITY
+            );
 
             p->density = std::max(p0, p->density);
 
             // pressure
             p->pressure = K * (p->density - p0);
 
-            #pragma omp flush
-            #pragma omp atomic update compare
-            if(par_excpt == multithread_exception::NONE) {
-                par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_PRESSURE * isnan(p->pressure));
-            }
-            #pragma omp flush
+            mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
+                isnan(p->pressure) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_PRESSURE
+            );
         }
     }
 }
@@ -361,12 +365,9 @@ void fluid_sim::calcAccelerationMultithread() {
                     p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                 }
             }
-            #pragma omp flush
-            #pragma omp atomic update compare
-            if(par_excpt == multithread_exception::NONE) {
-                par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_ACC * (isnan(p->acc.x) || isnan(p->acc.y)));
-            }
-            #pragma omp flush
+            mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
+                (isnan(p->acc.x) || isnan(p->acc.y)) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_ACC
+            );
             // capMagnitude(p->acc, 0.5f);
         }
     }
@@ -389,22 +390,16 @@ void fluid_sim::integrateMovementsMultithread() {
         _integrator->integrateStep2(p->pos, p->vel, dt);
         resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
 
-        #pragma omp flush
-        #pragma omp atomic update compare
-        if(par_excpt == multithread_exception::NONE) {
-            par_excpt = static_cast<multithread_exception>(multithread_exception::NAN_POS * (isnan(p->pos.x) || isnan(p->pos.y)));
-        }
-        #pragma omp flush
+        mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
+            (isnan(p->pos.x) || isnan(p->pos.y)) * (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::NAN_POS
+        );
 
         glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
         if(p->gridIdx != newIdx) {
             if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
-                #pragma omp flush
-                #pragma omp atomic update compare
-                if(par_excpt == multithread_exception::NONE) {
-                    par_excpt = multithread_exception::IDX_OUT_OF_RANGE;
-                }
-                #pragma omp flush
+                mt_excpt[omp_get_thread_num()] = static_cast<multithread_exception>(
+                    (mt_excpt[omp_get_thread_num()] == multithread_exception::NONE) * multithread_exception::IDX_OUT_OF_RANGE
+                );
             } else {
                 // erase p from grid[p->gridIdx.y][p->gridIdx.x]
                 omp_set_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
@@ -434,19 +429,13 @@ void fluid_sim::update() {
 void fluid_sim::updateMultithread() {
     for(int i = 0; i < num_iterations; i++) {
         calcDensityAndPressureMultithread();
-        if(par_excpt != multithread_exception::NONE) {
-            throw std::runtime_error(getErrorMessage(par_excpt));
-        }
+        getErrorMessageAllThreads(mt_excpt, num_threads);
 
         calcAccelerationMultithread();
-        if(par_excpt != multithread_exception::NONE) {
-            throw std::runtime_error(getErrorMessage(par_excpt));
-        }
+        getErrorMessageAllThreads(mt_excpt, num_threads);
 
         integrateMovementsMultithread();
-        if(par_excpt != multithread_exception::NONE) {
-            throw std::runtime_error(getErrorMessage(par_excpt));
-        }
+        getErrorMessageAllThreads(mt_excpt, num_threads);
     }
 }
 
@@ -493,6 +482,8 @@ void fluid_sim::destroy() {
     }
     delete[] grid;
     delete[] gridLock;
+
+    delete[] mt_excpt;
 
     for(auto& p : points)
         delete p;

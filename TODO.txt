@@ -1,0 +1,2 @@
+[ ] reorganize code
+[ ] implement better multithread exception handling using reduction
