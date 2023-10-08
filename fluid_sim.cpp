@@ -100,6 +100,9 @@ bool fluid_sim::checkShouldUpdate() {
     if(currentTime - lastUpdateTime >= tickDuration) {
         // if(showFrameTime)
         //     std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
+
+        // dt = (currentTime - lastUpdateTime) / (num_iterations * 4.0f);
+
         lastUpdateTime = currentTime;
         return true;
     }
