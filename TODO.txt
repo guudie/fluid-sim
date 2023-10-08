@@ -1,2 +1,4 @@
 [ ] reorganize code
 [✓] implement better multithread exception handling using reduction
+[ ] visualize velocity with color
+[ ] implement better interpolation
