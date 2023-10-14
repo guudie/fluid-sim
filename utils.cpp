@@ -16,15 +16,8 @@ bool getOption(int argc, char** argv, char opt) {
     static bool parsed = false;
     if(!parsed) {
         char c;
-        while(true) {
-            switch((c = getopt(argc, argv, argOpts))) {
-            case -1:
-                break;
-            default:
-                opt_set.insert(c);
-                continue;
-            }
-            break;
+        while((c = getopt(argc, argv, argOpts)) != -1) {
+            opt_set.insert(c);
         }
         parsed = true;
     }
