@@ -233,8 +233,7 @@ void fluid_sim::calcAcceleration() {
                     if(q == p)
                         continue;
                     const glm::vec2 diff = p->pos - q->pos;
-                    const float r2 = glm::dot(diff, diff);
-                    const float r = sqrt(r2);
+                    const float r = glm::length(diff);
 
                     if(r > EPS && r < h) {
                         const float W_spiky = spiky_coeff * (h - r) * (h - r);
@@ -246,8 +245,7 @@ void fluid_sim::calcAcceleration() {
             }
             if(p->pos.y >= _renderer->getHeight()-11) {
                 const glm::vec2 diff = { 0, p->pos.y - _renderer->getHeight() + 11 - h };
-                const float r2 = glm::dot(diff, diff);
-                const float r = sqrt(r2);
+                const float r = glm::length(diff);
                 if(r > EPS && r < h) {
                     const float W_spiky = spiky_coeff * (h - r) * (h - r);
                     p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
@@ -348,8 +346,7 @@ void fluid_sim::calcAccelerationMultithread() {
                         if(q == p)
                             continue;
                         const glm::vec2 diff = p->pos - q->pos;
-                        const float r2 = glm::dot(diff, diff);
-                        const float r = sqrt(r2);
+                        const float r = glm::length(diff);
 
                         if(r > EPS && r < h) {
                             const float W_spiky = spiky_coeff * (h - r) * (h - r);
@@ -361,8 +358,7 @@ void fluid_sim::calcAccelerationMultithread() {
                 }
                 if(p->pos.y >= _renderer->getHeight()-11) {
                     const glm::vec2 diff = { 0, p->pos.y - _renderer->getHeight() + 11 - h };
-                    const float r2 = glm::dot(diff, diff);
-                    const float r = sqrt(r2);
+                    const float r = glm::length(diff);
                     if(r > EPS && r < h) {
                         const float W_spiky = spiky_coeff * (h - r) * (h - r);
                         p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
