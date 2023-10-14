@@ -75,6 +75,7 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     max_acc = cfg.lookup("max_acc");
 
     mouse_coeff = cfg.lookup("mouse_coeff");
+    radius = cfg.lookup("particle_radius");
 
     cellSize = cfg.lookup("cell_size");
     gridDimX = windowWidth / cellSize;

@@ -43,7 +43,7 @@ private:
     int generateCount = 0;
     int maxGenerateCount = 6;
     float dt = 1.0f;
-    float radius = 4.0f;
+    float radius;
     int num_iterations;
     int max_particles;
     float K;
