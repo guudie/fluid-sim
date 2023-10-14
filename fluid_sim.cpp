@@ -458,8 +458,15 @@ void fluid_sim::updateMultithread() {
 void fluid_sim::render() {
     _renderer->clearScreen(0xFF000816);
 
-    for(auto& p : points)
+    for(auto& p : points) {
+        // uint8_t r = 0x55, g = 0xAA, b = 0xDD;
+        // float ratio = sqrt(glm::length(p->vel) / max_vel);
+        // r += (0xAA - 0x55) * ratio;
+        // g -= (0xAA - 0x55) * ratio;
+        // b -= (0xDD - 0x55) * ratio;
+        // uint32_t color = (0xFF << 24) | (r << 16) | (g << 8) | b;
         _renderer->drawCircle(p->pos, radius, 0xFF55AADD);
+    }
 
     _renderer->render();
 }

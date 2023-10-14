@@ -11,7 +11,7 @@
 #include "fluid_sim.h"
 #include "global.h"
 
-const char* argOpts = "mf";
+const char* argOpts = "mfc";
 const char* generalConfigPath = "config/general.cfg";
 const char* utilsConfigPath = "config/utils.cfg";
 
@@ -19,6 +19,7 @@ int main(int argc, char** argv) {
     const int width = 512, height = 512;
     bool multithread = getOption(argc, argv, 'm');
     bool frametime = getOption(argc, argv, 'f');
+    bool velColor = getOption(argc, argv, 'c');
 
     if(multithread)
         std::cout << "Multithreading enabled\nNo. of parallel threads: " << omp_get_max_threads() << std::endl;
