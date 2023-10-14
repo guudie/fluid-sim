@@ -41,7 +41,7 @@ private:
     bool showFrameTime = false;
 
     int generateCount = 0;
-    int maxGenerateCount = 6;
+    int maxGenerateCount = 8;
     float dt = 1.0f;
     float radius;
     int num_iterations;
