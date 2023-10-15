@@ -113,3 +113,13 @@ void renderer::drawFilledCircle(glm::vec2 center, float radius, Uint32 color) co
         }
     }
 }
+
+void renderer::drawSimpleCircle(glm::vec2 center, Uint32 color) const {
+    SDL_SetRenderDrawColor(ren, color >> 16, color >> 8, color, 255);
+    for(int offset = -1; offset < 2; offset++) {
+        SDL_RenderDrawPoint(ren, center.x + offset, center.y - 2);
+        SDL_RenderDrawPoint(ren, center.x + offset, center.y + 2);
+        SDL_RenderDrawPoint(ren, center.x - 2, center.y + offset);
+        SDL_RenderDrawPoint(ren, center.x + 2, center.y + offset);
+    }
+}
