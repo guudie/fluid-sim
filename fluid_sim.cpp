@@ -102,7 +102,7 @@ bool fluid_sim::checkShouldUpdate() {
         // if(showFrameTime)
         //     std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
 
-        // dt = (currentTime - lastUpdateTime) / (num_iterations * 4.0f);
+        dt = (currentTime - lastUpdateTime) / (num_iterations * 4.0f);
 
         lastUpdateTime = currentTime;
         return true;
@@ -465,7 +465,8 @@ void fluid_sim::render() {
         // g -= (0xAA - 0x55) * ratio;
         // b -= (0xDD - 0x55) * ratio;
         // uint32_t color = (0xFF << 24) | (r << 16) | (g << 8) | b;
-        _renderer->drawCircle(p->pos, radius, 0xFF55AADD);
+        // _renderer->drawCircle(p->pos, radius, 0xFF55AADD);
+        _renderer->drawSimpleCircle(p->pos, 0xFF55AADD);
     }
 
     _renderer->render();

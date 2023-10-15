@@ -1,9 +1,14 @@
 #include "implicitEuler.h"
 
-implicitEuler::implicitEuler(utilFunc g) {
+static glm::vec2 defaultCap(glm::vec2 v) {
+    return v;
+}
+
+implicitEuler::implicitEuler(utilFunc g, capFunc c) {
     assert(g != nullptr);
     f_func = nullptr;
     g_func = g;
+    cap = c ? c : defaultCap;
 }
 
 void implicitEuler::integrate(glm::vec2& y, glm::vec2& z, glm::vec2 zdash, float dt, float t) {
