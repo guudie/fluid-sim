@@ -209,16 +209,15 @@ void fluid_sim::calcDensityAndPressure() {
                     }
                 }
             }
-            if(isnan(p->density)) {
+            if(isnan(p->density))
                 throw std::runtime_error("Nan encountered in density");
-            }
+            
             p->density = std::max(p0, p->density);
 
             // pressure
             p->pressure = K * (p->density - p0);
-            if(isnan(p->pressure)) {
+            if(isnan(p->pressure))
                 throw std::runtime_error("Nan encountered in pressure");
-            }
         }
     }
 }
@@ -252,9 +251,9 @@ void fluid_sim::calcAcceleration() {
                     p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                 }
             }
-            if(isnan(p->acc.x) || isnan(p->acc.y)) {
+            if(isnan(p->acc.x) || isnan(p->acc.y))
                 throw std::runtime_error("Nan encountered in acc");
-            }
+
             // capMagnitude(p->acc, 0.5f);
         }
     }
@@ -276,14 +275,14 @@ void fluid_sim::integrateMovements() {
         _integrator->integrateStep2(p->pos, p->vel, dt);
         resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
 
-        if(isnan(p->pos.x) || isnan(p->pos.y)) {
+        if(isnan(p->pos.x) || isnan(p->pos.y))
             throw std::runtime_error("Nan encountered in position");
-        }
+        
         glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
         if(p->gridIdx != newIdx) {
-            if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
+            if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY)
                 throw std::runtime_error("Index out of range");
-            }
+            
             grid[p->gridIdx.y][p->gridIdx.x].erase(p);
             grid[newIdx.y][newIdx.x].insert(p);
             p->gridIdx = newIdx;
@@ -439,19 +438,16 @@ void fluid_sim::update() {
 void fluid_sim::updateMultithread() {
     for(int i = 0; i < num_iterations; i++) {
         calcDensityAndPressureMultithread();
-        if(mt_excpt != NONE) {
+        if(mt_excpt != NONE)
             throw std::runtime_error(getErrorMessage(mt_excpt));
-        }
-
+        
         calcAccelerationMultithread();
-        if(mt_excpt != NONE) {
+        if(mt_excpt != NONE)
             throw std::runtime_error(getErrorMessage(mt_excpt));
-        }
 
         integrateMovementsMultithread();
-        if(mt_excpt != NONE) {
+        if(mt_excpt != NONE)
             throw std::runtime_error(getErrorMessage(mt_excpt));
-        }
     }
 }
 
