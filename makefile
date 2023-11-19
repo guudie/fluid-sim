@@ -2,7 +2,13 @@
 
 EXT =
 WINOPT =
+
+DEBUG = true
 DEBUGCONSOLE = true
+ifeq ($(DEBUG), false)
+	DEBUGCONSOLE = false
+endif
+
 ifeq ($(OS), Windows_NT)
 	EXT = .exe
 	ifeq ($(DEBUGCONSOLE), true)
