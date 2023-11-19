@@ -28,8 +28,8 @@ int main(int argc, char** argv) {
     try {
         parseConfig(cfg, generalConfigPath);
         utConf::getConfig();
-    } catch(std::runtime_error& rex) {
-        std::cout << rex.what() << std::endl;
+    } catch(std::exception& e) {
+        std::cout << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -56,8 +56,8 @@ int main(int argc, char** argv) {
                     sim->updateMultithread();
                 else
                     sim->update();
-            } catch(std::runtime_error& rex) {
-                std::cout << rex.what() << std::endl;
+            } catch(std::exception& e) {
+                std::cout << e.what() << std::endl;
                 break;
             }
 
