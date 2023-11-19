@@ -19,6 +19,17 @@ struct segment {
     float len;
 };
 
+class utilsConfig {
+public:
+    static libconfig::Config cfg;
+    static float bounceCoeff;
+    static float groundBounceCoeff;
+
+    static void getConfig();
+};
+
+typedef utilsConfig utConf;
+
 bool getOption(int argc, char** argv, char opt);
 void getUtilsConfig();
 void parseConfig(libconfig::Config& cfg, const char* configPath);
