@@ -7,9 +7,18 @@
 #include "utils.h"
 #include "global.h"
 
-static libconfig::Config utilsconfig;
-static float bounceCoeff;
-static float groundBounceCoeff;
+libconfig::Config utilsConfig::cfg;
+float utilsConfig::bounceCoeff;
+float utilsConfig::groundBounceCoeff;
+
+void utilsConfig::parseConfig() {
+    ::parseConfig(cfg, utilsConfigPath);
+}
+
+void utilsConfig::readConfig() {
+    bounceCoeff = cfg.lookup("bounce_coeff");
+    groundBounceCoeff = cfg.lookup("ground_bounce_coeff");
+}
 
 bool getOption(int argc, char** argv, char opt) {
     static std::unordered_set<char> opt_set;
@@ -22,12 +31,6 @@ bool getOption(int argc, char** argv, char opt) {
         parsed = true;
     }
     return opt_set.find(opt) != opt_set.end();
-}
-
-void getUtilsConfig() {
-    parseConfig(utilsconfig, utilsConfigPath);
-    bounceCoeff = utilsconfig.lookup("bounce_coeff");
-    groundBounceCoeff = utilsconfig.lookup("ground_bounce_coeff");
 }
 
 void parseConfig(libconfig::Config& cfg, const char* configPath) {
@@ -49,19 +52,19 @@ void parseConfig(libconfig::Config& cfg, const char* configPath) {
 void resolveOutOfBounds(point& p, int w, int h) {
     if(p.pos.x > w) {
         p.pos.x = w;
-        p.vel.x *= -bounceCoeff;
+        p.vel.x *= -utConf::bounceCoeff;
     }
     if(p.pos.x < 0){
         p.pos.x = 0;
-        p.vel.x *= -bounceCoeff;
+        p.vel.x *= -utConf::bounceCoeff;
     }
     if(p.pos.y > h - 10) {
         p.pos.y = h - 10;
-        p.vel.y *= -bounceCoeff * groundBounceCoeff;
+        p.vel.y *= -utConf::bounceCoeff * utConf::groundBounceCoeff;
     }
     if(p.pos.y < 0) {
         p.pos.y = 0;
-        p.vel.y *= -bounceCoeff;
+        p.vel.y *= -utConf::bounceCoeff;
     }
 }
 

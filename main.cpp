@@ -27,9 +27,9 @@ int main(int argc, char** argv) {
     libconfig::Config cfg;
     try {
         parseConfig(cfg, generalConfigPath);
-        getUtilsConfig();
-    } catch(std::runtime_error& rex) {
-        std::cout << rex.what() << std::endl;
+        utConf::parseConfig();
+    } catch(std::exception& e) {
+        std::cout << e.what() << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -42,7 +42,14 @@ int main(int argc, char** argv) {
     });
 
     fluid_sim* sim = new fluid_sim();
-    sim->setup(cfg, width, height, (ODESolver*)&_integrator);
+    try {
+        sim->setup(cfg, width, height, (ODESolver*)&_integrator);
+        utConf::readConfig();
+    } catch(std::exception& e) {
+        std::cout << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
     sim->setShowFrameTime(frametime);
     sim->generateInitialParticles();
 
@@ -56,8 +63,8 @@ int main(int argc, char** argv) {
                     sim->updateMultithread();
                 else
                     sim->update();
-            } catch(std::runtime_error& rex) {
-                std::cout << rex.what() << std::endl;
+            } catch(std::exception& e) {
+                std::cout << e.what() << std::endl;
                 break;
             }
 
