@@ -10,8 +10,12 @@
 libconfig::Config utilsConfig::cfg;
 float utilsConfig::bounceCoeff;
 float utilsConfig::groundBounceCoeff;
-void utilsConfig::getConfig() {
-    parseConfig(cfg, utilsConfigPath);
+
+void utilsConfig::parseConfig() {
+    ::parseConfig(cfg, utilsConfigPath);
+}
+
+void utilsConfig::readConfig() {
     bounceCoeff = cfg.lookup("bounce_coeff");
     groundBounceCoeff = cfg.lookup("ground_bounce_coeff");
 }
