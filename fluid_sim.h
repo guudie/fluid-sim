@@ -29,7 +29,7 @@ private:
     omp_lock_t** gridLock;
     renderer* _renderer = nullptr;
     mouse* _mouse = nullptr;
-    ODESolver* _integrator;
+    ODESolver* _integrator = nullptr;
 
     multithread_exception mt_excpt = NONE;
 
