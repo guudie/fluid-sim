@@ -4,14 +4,11 @@ EXT =
 WINOPT =
 
 DEBUG = true
-DEBUGCONSOLE = true
-ifeq ($(DEBUG), false)
-	DEBUGCONSOLE = false
-endif
+CONSOLE_OUTPUT = true
 
 ifeq ($(OS), Windows_NT)
 	EXT = .exe
-	ifeq ($(DEBUGCONSOLE), true)
+	ifeq ($(CONSOLE_OUTPUT), true)
 		WINOPT = -mconsole
 	endif
 endif
@@ -22,8 +19,8 @@ GCC = g++
 OMP = -fopenmp
 LIBS = `sdl2-config --libs` -lconfig++
 LCFGFLAG =
-STATICLINK = false
-ifeq ($(STATICLINK), true)
+STATIC_LINK = false
+ifeq ($(STATIC_LINK), true)
 	LIBS = `sdl2-config --static-libs` -lconfig++ --static
 	LCFGFLAG = -DLIBCONFIGXX_STATIC
 endif
