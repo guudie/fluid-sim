@@ -13,17 +13,17 @@ class renderer;
 class mouse;
 class ODESolver;
 
-enum multithread_exception {
-    NONE,
-    IDX_OUT_OF_RANGE,
-    NAN_POS,
-    NAN_ACC,
-    NAN_PRESSURE,
-    NAN_DENSITY
-};
-
 class fluid_sim {
 private:
+    enum multithread_exception {
+        NONE,
+        IDX_OUT_OF_RANGE,
+        NAN_POS,
+        NAN_ACC,
+        NAN_PRESSURE,
+        NAN_DENSITY
+    };
+
     std::unordered_set<point*>** grid;
     std::vector<point*> points;
     omp_lock_t** gridLock;
@@ -82,6 +82,8 @@ public:
     void postInput();
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
     void generateInitialParticles();
+
+    const char* getMultithreadError() const;
 
     void calcDensityAndPressure();
     void calcAcceleration();

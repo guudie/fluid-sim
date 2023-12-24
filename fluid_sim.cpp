@@ -9,37 +9,6 @@
 #define PI 3.14159265359
 #define EPS 1e-6
 
-/*
-    NONE,
-    NAN_DENSITY,
-    NAN_PRESSURE,
-    NAN_ACC,
-    NAN_POS,
-    IDX_OUT_OF_RANGE
-*/
-static const char* getErrorMessage(const multithread_exception& err) {
-    switch(err) {
-    case multithread_exception::NAN_DENSITY:
-        return "Nan encountered in density";
-        break;
-    case multithread_exception::NAN_PRESSURE:
-        return "Nan encountered in pressure";
-        break;
-    case multithread_exception::NAN_ACC:
-        return "Nan encountered in acc";
-        break;
-    case multithread_exception::NAN_POS:
-        return "Nan encountered in position";
-        break;
-    case multithread_exception::IDX_OUT_OF_RANGE:
-        return "Index out of range";
-        break;
-    default:
-        return "No error";
-        break;
-    }
-}
-
 static void capMagnitude(glm::vec2& v, float maxMag) {
     float len = glm::length(v);
     if(len < EPS) {
@@ -166,12 +135,6 @@ void fluid_sim::postInput() {
     }
 }
 
-void fluid_sim::generateInitialParticles() {
-    glm::ivec2 tl(0, 450);
-    glm::ivec2 br(_renderer->getWidth()-1, _renderer->getHeight()-11);
-    generateParticles(tl, br, h - 0.0001f);
-}
-
 void fluid_sim::generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist) {
     for(int r = from.y; r < to.y; r += dist) {
         for(int c = from.x; c < to.x; c += dist) {
@@ -189,6 +152,43 @@ void fluid_sim::generateParticles(const glm::ivec2& from, const glm::ivec2& to, 
             points.emplace_back(p);
             grid[p->gridIdx.y][p->gridIdx.x].insert(p);
         }
+    }
+}
+
+void fluid_sim::generateInitialParticles() {
+    glm::ivec2 tl(0, 450);
+    glm::ivec2 br(_renderer->getWidth()-1, _renderer->getHeight()-11);
+    generateParticles(tl, br, h - 0.0001f);
+}
+
+/*
+    NONE,
+    NAN_DENSITY,
+    NAN_PRESSURE,
+    NAN_ACC,
+    NAN_POS,
+    IDX_OUT_OF_RANGE
+*/
+inline const char* fluid_sim::getMultithreadError() const {
+    switch(mt_excpt) {
+    case multithread_exception::NAN_DENSITY:
+        return "Nan encountered in density";
+        break;
+    case multithread_exception::NAN_PRESSURE:
+        return "Nan encountered in pressure";
+        break;
+    case multithread_exception::NAN_ACC:
+        return "Nan encountered in acc";
+        break;
+    case multithread_exception::NAN_POS:
+        return "Nan encountered in position";
+        break;
+    case multithread_exception::IDX_OUT_OF_RANGE:
+        return "Index out of range";
+        break;
+    default:
+        return "No error";
+        break;
     }
 }
 
@@ -439,15 +439,15 @@ void fluid_sim::updateMultithread() {
     for(int i = 0; i < num_iterations; i++) {
         calcDensityAndPressureMultithread();
         if(mt_excpt != NONE)
-            throw std::runtime_error(getErrorMessage(mt_excpt));
+            throw std::runtime_error(getMultithreadError());
         
         calcAccelerationMultithread();
         if(mt_excpt != NONE)
-            throw std::runtime_error(getErrorMessage(mt_excpt));
+            throw std::runtime_error(getMultithreadError());
 
         integrateMovementsMultithread();
         if(mt_excpt != NONE)
-            throw std::runtime_error(getErrorMessage(mt_excpt));
+            throw std::runtime_error(getMultithreadError());
     }
 }
 
