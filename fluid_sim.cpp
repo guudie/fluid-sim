@@ -17,8 +17,8 @@
     NAN_POS,
     IDX_OUT_OF_RANGE
 */
-static const char* getErrorMessage(const multithread_exception& err) {
-    switch(err) {
+inline const char* fluid_sim::getErrorMessage() const {
+    switch(mt_excpt) {
     case multithread_exception::NAN_DENSITY:
         return "Nan encountered in density";
         break;
@@ -439,15 +439,15 @@ void fluid_sim::updateMultithread() {
     for(int i = 0; i < num_iterations; i++) {
         calcDensityAndPressureMultithread();
         if(mt_excpt != NONE)
-            throw std::runtime_error(getErrorMessage(mt_excpt));
+            throw std::runtime_error(getErrorMessage());
         
         calcAccelerationMultithread();
         if(mt_excpt != NONE)
-            throw std::runtime_error(getErrorMessage(mt_excpt));
+            throw std::runtime_error(getErrorMessage());
 
         integrateMovementsMultithread();
         if(mt_excpt != NONE)
-            throw std::runtime_error(getErrorMessage(mt_excpt));
+            throw std::runtime_error(getErrorMessage());
     }
 }
 
