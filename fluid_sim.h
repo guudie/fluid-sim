@@ -83,7 +83,7 @@ public:
     void generateParticles(const glm::ivec2& from, const glm::ivec2& to, float dist);
     void generateInitialParticles();
 
-    const char* getErrorMessage() const;
+    const char* getMultithreadError() const;
 
     void calcDensityAndPressure();
     void calcAcceleration();
