@@ -9,6 +9,10 @@
 #define PI 3.14159265359
 #define EPS 1e-6
 
+// the default (abstract) interval between 2 physics calculations
+// 4 calculations per 16ms
+#define DEFAULT_MEAN_CALC_INTERVAL 4.0f
+
 static void capMagnitude(glm::vec2& v, float maxMag) {
     float len = glm::length(v);
     if(len < EPS) {
@@ -71,7 +75,7 @@ bool fluid_sim::checkShouldUpdate() {
         // if(showFrameTime)
         //     std::cout << "\rFrame time: " << currentTime - lastUpdateTime << " ms" << std::flush;
 
-        dt = (currentTime - lastUpdateTime) / (num_iterations * 4.0f);
+        dt = (currentTime - lastUpdateTime) / (num_iterations * DEFAULT_MEAN_CALC_INTERVAL);
 
         lastUpdateTime = currentTime;
         return true;
