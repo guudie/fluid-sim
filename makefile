@@ -3,8 +3,13 @@
 EXT =
 WINOPT =
 
-DEBUG = true
 CONSOLE_OUTPUT = true
+
+DEBUG = false
+DEBUGFLAGS = -g0
+ifeq ($(DEBUG), true)
+	DEBUGFLAGS = -ggdb
+endif
 
 ifeq ($(OS), Windows_NT)
 	EXT = .exe
@@ -30,7 +35,7 @@ all: subdirs renderer.o mouse.o utils.o fluid_sim.o main.o app$(EXT)
 clean:
 	-rm *.o *.exe; \
 	for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir clean; \
+		$(MAKE) DEBUG=$(DEBUG) -C $$dir clean; \
 	done
 
 subdirs:
@@ -39,19 +44,19 @@ subdirs:
 	done
 
 renderer.o: renderer.h renderer.cpp
-	$(GCC) $(ARGS) -c renderer.cpp -o renderer.o
+	$(GCC) $(ARGS) $(DEBUGFLAGS) -c renderer.cpp -o renderer.o
 
 mouse.o: mouse.h mouse.cpp
-	$(GCC) $(ARGS) -c mouse.cpp -o mouse.o
+	$(GCC) $(ARGS) $(DEBUGFLAGS) -c mouse.cpp -o mouse.o
 
 utils.o: utils.h utils.cpp global.h
-	$(GCC) $(ARGS) $(LCFGFLAG) -c utils.cpp -o utils.o
+	$(GCC) $(ARGS) $(DEBUGFLAGS) $(LCFGFLAG) -c utils.cpp -o utils.o
 
 fluid_sim.o: fluid_sim.h fluid_sim.cpp renderer.h mouse.h utils.h ./ODE_solvers/ODESolver.h
-	$(GCC) $(ARGS) $(LCFGFLAG) $(OMP) -c fluid_sim.cpp -o fluid_sim.o
+	$(GCC) $(ARGS) $(DEBUGFLAGS) $(LCFGFLAG) $(OMP) -c fluid_sim.cpp -o fluid_sim.o
 
 main.o: main.cpp renderer.h mouse.h utils.h fluid_sim.h ./ODE_solvers/implicitEuler.h global.h
-	$(GCC) $(ARGS) $(LCFGFLAG) $(OMP) -c main.cpp -o main.o
+	$(GCC) $(ARGS) $(DEBUGFLAGS) $(LCFGFLAG) $(OMP) -c main.cpp -o main.o
 
 app$(EXT): main.o renderer.o mouse.o utils.o fluid_sim.o ./ODE_solvers/ode_joined.o
-	$(GCC) -o $@ $^ $(CFLAGS)
+	$(GCC) $(DEBUGFLAGS) -o $@ $^ $(CFLAGS)
