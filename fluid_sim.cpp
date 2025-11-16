@@ -9,7 +9,7 @@
 #define PI 3.14159265359
 #define EPS 1e-6
 
-// the default (abstract) interval between 2 physics calculations
+// the default (reference) interval between 2 physics calculations
 // 4 calculations per 16ms
 #define DEFAULT_MEAN_CALC_INTERVAL 4.0f
 
