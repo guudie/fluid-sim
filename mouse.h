@@ -11,7 +11,7 @@ private:
     bool sideButtonX2Down;
 
 public:
-    mouse() : pos({0, 0}), prevPos({0, 0}), leftButtonDown(false), rightButtonDown(false), sideButtonX2Down(false) { }
+    mouse() : pos({ 0, 0 }), prevPos({ 0, 0 }), leftButtonDown(false), rightButtonDown(false), sideButtonX2Down(false) {}
     ~mouse() = default;
 
     const glm::vec2& getPos() const;

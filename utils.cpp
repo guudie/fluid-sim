@@ -36,13 +36,9 @@ bool getOption(int argc, char** argv, char opt) {
 void parseConfig(libconfig::Config& cfg, const char* configPath) {
     try {
         cfg.readFile(configPath);
-    }
-    catch(const libconfig::FileIOException &fioex)
-    {
+    } catch(const libconfig::FileIOException& fioex) {
         throw std::runtime_error("I/O error while reading file.");
-    }
-    catch(const libconfig::ParseException &pex)
-    {
+    } catch(const libconfig::ParseException& pex) {
         std::stringstream ss;
         ss << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError();
         throw std::runtime_error(ss.str());
@@ -54,7 +50,7 @@ void resolveOutOfBounds(point& p, int w, int h) {
         p.pos.x = w;
         p.vel.x *= -utConf::bounceCoeff;
     }
-    if(p.pos.x < 0){
+    if(p.pos.x < 0) {
         p.pos.x = 0;
         p.vel.x *= -utConf::bounceCoeff;
     }

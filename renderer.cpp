@@ -47,7 +47,7 @@ bool renderer::setup(int w, int h) {
 void renderer::clearScreen(Uint32 color) const {
     SDL_SetRenderDrawColor(ren, color >> 16, color >> 8, color, 255);
     SDL_RenderClear(ren);
-} 
+}
 
 void renderer::render() const {
     SDL_RenderPresent(ren);
@@ -74,8 +74,7 @@ void renderer::drawCircle(glm::vec2 center, float radius, Uint32 color) const {
     int error = tx - diameter;
 
     SDL_SetRenderDrawColor(ren, color >> 16, color >> 8, color, 255);
-    while (x >= y)
-    {
+    while(x >= y) {
         SDL_RenderDrawPoint(ren, centerX + x, centerY - y);
         SDL_RenderDrawPoint(ren, centerX + x, centerY + y);
         SDL_RenderDrawPoint(ren, centerX - x, centerY - y);
@@ -85,15 +84,13 @@ void renderer::drawCircle(glm::vec2 center, float radius, Uint32 color) const {
         SDL_RenderDrawPoint(ren, centerX - y, centerY - x);
         SDL_RenderDrawPoint(ren, centerX - y, centerY + x);
 
-        if (error <= 0)
-        {
+        if(error <= 0) {
             ++y;
             error += ty;
             ty += 2;
         }
 
-        if (error > 0)
-        {
+        if(error > 0) {
             --x;
             tx += 2;
             error += tx - diameter;
@@ -103,11 +100,11 @@ void renderer::drawCircle(glm::vec2 center, float radius, Uint32 color) const {
 
 void renderer::drawFilledCircle(glm::vec2 center, float radius, Uint32 color) const {
     SDL_SetRenderDrawColor(ren, color >> 16, color >> 8, color, 255);
-    for (int w = 0; w < radius * 2; w++) {
-        for (int h = 0; h < radius * 2; h++) {
+    for(int w = 0; w < radius * 2; w++) {
+        for(int h = 0; h < radius * 2; h++) {
             int dx = radius - w; // horizontal offset
             int dy = radius - h; // vertical offset
-            if ((dx*dx + dy*dy) <= (radius * radius)) {
+            if((dx * dx + dy * dy) <= (radius * radius)) {
                 SDL_RenderDrawPoint(ren, center.x + dx, center.y + dy);
             }
         }

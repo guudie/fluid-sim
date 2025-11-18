@@ -6,6 +6,10 @@
 #include "utils.h"
 #include "glm/glm.hpp"
 
+#define FOR_2D(R_INIT_EXPR, R_COND_EXPR, R_UPDT_EXPR, C_INIT_EXPR, C_COND_EXPR, C_UPDT_EXPR) \
+    for(R_INIT_EXPR; R_COND_EXPR; R_UPDT_EXPR)                                               \
+        for(C_INIT_EXPR; C_COND_EXPR; C_UPDT_EXPR)
+
 #define PI 3.14159265359
 #define EPS 1e-6
 
@@ -103,24 +107,24 @@ void fluid_sim::input() {
         case SDL_MOUSEBUTTONDOWN:
             SDL_GetMouseState(&x, &y);
             _mouse->updatePos(x, y);
-            if (!_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) {
+            if(!_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) {
                 _mouse->setLB(true);
             }
-            if (!_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) {
+            if(!_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) {
                 _mouse->setRB(true);
             }
-            if (!_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) {
+            if(!_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) {
                 _mouse->setSBX2(true);
             }
             break;
-        case SDL_MOUSEBUTTONUP: 
-            if (_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) {
+        case SDL_MOUSEBUTTONUP:
+            if(_mouse->getLB() && event.button.button == SDL_BUTTON_LEFT) {
                 _mouse->setLB(false);
             }
-            if (_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) {
+            if(_mouse->getRB() && event.button.button == SDL_BUTTON_RIGHT) {
                 _mouse->setRB(false);
             }
-            if (_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) {
+            if(_mouse->getSBX2() && event.button.button == SDL_BUTTON_X2) {
                 _mouse->setSBX2(false);
             }
             break;
@@ -144,7 +148,7 @@ void fluid_sim::generateParticles(const glm::ivec2& from, const glm::ivec2& to, 
         for(int c = from.x; c < to.x; c += dist) {
             if(points.size() == max_particles)
                 return;
-            point* p = new point {
+            point* p = new point{
                 { c, r },
                 { rand() % 1, 0 },
                 { 0, 0 },
@@ -161,7 +165,7 @@ void fluid_sim::generateParticles(const glm::ivec2& from, const glm::ivec2& to, 
 
 void fluid_sim::generateInitialParticles() {
     glm::ivec2 tl(0, 450);
-    glm::ivec2 br(_renderer->getWidth()-1, _renderer->getHeight()-11);
+    glm::ivec2 br(_renderer->getWidth() - 1, _renderer->getHeight() - 11);
     generateParticles(tl, br, h - 0.0001f);
 }
 
@@ -197,13 +201,15 @@ inline const char* fluid_sim::getMultithreadError() const {
 }
 
 void fluid_sim::calcDensityAndPressure() {
-    for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
+    FOR_2D(int r = 0, r < gridDimY, r++,
+           int c = 0, c < gridDimX, c++) {
         for(auto& p : grid[r][c]) {
             // density
             p->density = 0;
             const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
             const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
-            for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+            FOR_2D(int ir = irmin, ir <= irmax, ir++,
+                   int ic = icmin, ic <= icmax, ic++) {
                 for(auto& q : grid[ir][ic]) {
                     const glm::vec2 diff = p->pos - q->pos;
                     const float r2 = glm::dot(diff, diff);
@@ -215,7 +221,7 @@ void fluid_sim::calcDensityAndPressure() {
             }
             if(isnan(p->density))
                 throw std::runtime_error("Nan encountered in density");
-            
+
             p->density = std::max(p0, p->density);
 
             // pressure
@@ -227,12 +233,14 @@ void fluid_sim::calcDensityAndPressure() {
 }
 
 void fluid_sim::calcAcceleration() {
-    for(int r = 0; r < gridDimY; r++)  for(int c = 0; c < gridDimX; c++) {
+    FOR_2D(int r = 0, r < gridDimY, r++,
+           int c = 0, c < gridDimX, c++) {
         for(auto& p : grid[r][c]) {
             p->acc = { 0, 0 };
             const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
             const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
-            for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+            FOR_2D(int ir = irmin, ir <= irmax, ir++,
+                   int ic = icmin, ic <= icmax, ic++) {
                 for(auto& q : grid[ir][ic]) {
                     if(q == p)
                         continue;
@@ -247,7 +255,7 @@ void fluid_sim::calcAcceleration() {
                     }
                 }
             }
-            if(p->pos.y >= _renderer->getHeight()-11) {
+            if(p->pos.y >= _renderer->getHeight() - 11) {
                 const glm::vec2 diff = { 0, p->pos.y - _renderer->getHeight() + 11 - h };
                 const float r = glm::length(diff);
                 if(r > EPS && r < h) {
@@ -275,18 +283,18 @@ void fluid_sim::integrateMovements() {
         }
         _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
         capMagnitude(p->vel, max_vel);
-        
+
         _integrator->integrateStep2(p->pos, p->vel, dt);
-        resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
+        resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
 
         if(isnan(p->pos.x) || isnan(p->pos.y))
             throw std::runtime_error("Nan encountered in position");
-        
+
         glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
         if(p->gridIdx != newIdx) {
             if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY)
                 throw std::runtime_error("Index out of range");
-            
+
             grid[p->gridIdx.y][p->gridIdx.x].erase(p);
             grid[newIdx.y][newIdx.x].insert(p);
             p->gridIdx = newIdx;
@@ -295,18 +303,21 @@ void fluid_sim::integrateMovements() {
 }
 
 void fluid_sim::calcDensityAndPressureMultithread() {
+    // clang-format off
     #pragma omp parallel
     {
         multithread_exception mt_excpt_thread = NONE;
 
         #pragma omp for collapse(2)
-        for(int r = 0; r < gridDimY; r++) for(int c = 0; c < gridDimX; c++) {
+        FOR_2D(int r = 0, r < gridDimY, r++,
+               int c = 0, c < gridDimX, c++) {
             for(auto& p : grid[r][c]) {
                 // density
                 p->density = 0;
                 const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
                 const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
-                for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+                FOR_2D(int ir = irmin, ir <= irmax, ir++,
+                       int ic = icmin, ic <= icmax, ic++) {
                     for(auto& q : grid[ir][ic]) {
                         const glm::vec2 diff = p->pos - q->pos;
                         const float r2 = glm::dot(diff, diff);
@@ -332,20 +343,24 @@ void fluid_sim::calcDensityAndPressureMultithread() {
             mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
+    // clang-format on
 }
 
 void fluid_sim::calcAccelerationMultithread() {
-    #pragma omp parallel 
+    // clang-format off
+    #pragma omp parallel
     {
         multithread_exception mt_excpt_thread = NONE;
-        
+
         #pragma omp for collapse(2)
-        for(int r = 0; r < gridDimY; r++) for(int c = 0; c < gridDimX; c++) {
+        FOR_2D(int r = 0, r < gridDimY, r++,
+               int c = 0, c < gridDimX, c++) {
             for(auto& p : grid[r][c]) {
                 p->acc = { 0, 0 };
                 const int irmin = std::max(0, r - 1), irmax = std::min(gridDimY - 1, r + 1);
                 const int icmin = std::max(0, c - 1), icmax = std::min(gridDimX - 1, c + 1);
-                for(int ir = irmin; ir <= irmax; ir++) for(int ic = icmin; ic <= icmax; ic++) {
+                FOR_2D(int ir = irmin, ir <= irmax, ir++,
+                       int ic = icmin, ic <= icmax, ic++) {
                     for(auto& q : grid[ir][ic]) {
                         if(q == p)
                             continue;
@@ -360,7 +375,7 @@ void fluid_sim::calcAccelerationMultithread() {
                         }
                     }
                 }
-                if(p->pos.y >= _renderer->getHeight()-11) {
+                if(p->pos.y >= _renderer->getHeight() - 11) {
                     const glm::vec2 diff = { 0, p->pos.y - _renderer->getHeight() + 11 - h };
                     const float r = glm::length(diff);
                     if(r > EPS && r < h) {
@@ -378,13 +393,15 @@ void fluid_sim::calcAccelerationMultithread() {
             mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
+    // clang-format on
 }
 
 void fluid_sim::integrateMovementsMultithread() {
-    #pragma omp parallel 
+    // clang-format off
+    #pragma omp parallel
     {
         multithread_exception mt_excpt_thread = NONE;
-        
+
         #pragma omp for
         for(auto& p : points) {
             // _integrator.integrate(p->pos, p->vel, p->acc, dt);
@@ -397,9 +414,9 @@ void fluid_sim::integrateMovementsMultithread() {
             }
             _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
             capMagnitude(p->vel, max_vel);
-            
+
             _integrator->integrateStep2(p->pos, p->vel, dt);
-            resolveOutOfBounds(*p, _renderer->getWidth()-1, _renderer->getHeight()-1);
+            resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
 
             mt_excpt_thread = ((isnan(p->pos.x) || isnan(p->pos.y)) && (mt_excpt_thread == NONE)) ? NAN_POS : mt_excpt_thread;
 
@@ -429,6 +446,7 @@ void fluid_sim::integrateMovementsMultithread() {
             mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
+    // clang-format on
 }
 
 void fluid_sim::update() {
@@ -444,7 +462,7 @@ void fluid_sim::updateMultithread() {
         calcDensityAndPressureMultithread();
         if(mt_excpt != NONE)
             throw std::runtime_error(getMultithreadError());
-        
+
         calcAccelerationMultithread();
         if(mt_excpt != NONE)
             throw std::runtime_error(getMultithreadError());
@@ -497,9 +515,11 @@ float fluid_sim::getH() const {
 }
 
 void fluid_sim::destroy() {
-    for(int i = 0; i < gridDimY; i++) for(int j = 0; j < gridDimX; j++)
+    FOR_2D(int i = 0, i < gridDimY, i++,
+           int j = 0, j < gridDimX, j++) {
         omp_destroy_lock(&gridLock[i][j]);
-    
+    }
+
     for(int i = 0; i < gridDimY; i++) {
         delete[] grid[i];
         delete[] gridLock[i];
@@ -509,7 +529,7 @@ void fluid_sim::destroy() {
 
     for(auto& p : points)
         delete p;
-    
+
     delete _mouse;
     delete _renderer;
 }
