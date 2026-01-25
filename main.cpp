@@ -11,9 +11,9 @@
 #include "fluid_sim.h"
 #include "global.h"
 
-const char* argOpts = "mfc";
-const char* generalConfigPath = "config/general.cfg";
-const char* utilsConfigPath = "config/utils.cfg";
+const char* global::argOpts = "mfc";
+const char* global::generalConfigPath = "config/general.cfg";
+const char* global::utilsConfigPath = "config/utils.cfg";
 
 int main(int argc, char** argv) {
     const int width = 512, height = 512;
@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 
     libconfig::Config cfg;
     try {
-        parseConfig(cfg, generalConfigPath);
+        parseConfig(cfg, global::generalConfigPath);
         utConf::parseConfig();
     } catch(std::exception& e) {
         std::cout << e.what() << std::endl;

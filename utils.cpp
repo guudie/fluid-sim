@@ -12,7 +12,7 @@ float utilsConfig::bounceCoeff;
 float utilsConfig::groundBounceCoeff;
 
 void utilsConfig::parseConfig() {
-    ::parseConfig(cfg, utilsConfigPath);
+    ::parseConfig(cfg, global::utilsConfigPath);
 }
 
 void utilsConfig::readConfig() {
@@ -25,7 +25,7 @@ bool getOption(int argc, char** argv, char opt) {
     static bool parsed = false;
     if(!parsed) {
         char c;
-        while((c = getopt(argc, argv, argOpts)) != -1) {
+        while((c = getopt(argc, argv, global::argOpts)) != -1) {
             opt_set.insert(c);
         }
         parsed = true;
