@@ -58,15 +58,17 @@ void fluid_sim::setup(const libconfig::Config& cfg, int windowWidth, int windowH
     gridDimX = windowWidth / cellSize;
     gridDimY = windowHeight / cellSize;
 
-    grid = new std::unordered_set<point*>*[gridDimY];
+    grid = new std::unordered_set<point*>* [gridDimY] { nullptr };
     gridLock = new omp_lock_t*[gridDimY];
     for(int i = 0; i < gridDimY; i++) {
-        grid[i] = new std::unordered_set<point*>[gridDimX];
+        grid[i] = new std::unordered_set<point*>[gridDimX] {};
         gridLock[i] = new omp_lock_t[gridDimX];
         for(int j = 0; j < gridDimX; j++)
             omp_init_lock(&gridLock[i][j]);
     }
     points.reserve(max_particles);
+
+    resolveClipping = cfg.lookup("resolve_clipping");
 
     running = _renderer->setup(windowWidth, windowHeight);
 
@@ -200,6 +202,7 @@ inline const char* fluid_sim::getMultithreadError() const {
     }
 }
 
+#pragma region SINGLE-THREADED COMPUTATION
 void fluid_sim::calcDensityAndPressure() {
     FOR_2D(int r = 0, r < gridDimY, r++,
            int c = 0, c < gridDimX, c++) {
@@ -275,6 +278,9 @@ void fluid_sim::integrateMovements() {
     for(auto& p : points) {
         // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
+        if(resolveClipping)
+            occupiedPos.erase(p->pos);
+
         // calculate velocity
         if(_mouse->getLB()) {
             glm::vec2 toMouse = _mouse->getPos() - p->pos;
@@ -286,6 +292,16 @@ void fluid_sim::integrateMovements() {
 
         _integrator->integrateStep2(p->pos, p->vel, dt);
         resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
+
+        if(resolveClipping) {
+            // try at most 5 times
+            glm::vec2 v(-p->vel.y, p->vel.x);
+            for(int i = 0; i < 5 && occupiedPos.count(p->pos); i++) {
+                p->pos += v * 0.01f;
+                resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
+            }
+            occupiedPos.insert(p->pos);
+        }
 
         if(isnan(p->pos.x) || isnan(p->pos.y))
             throw std::runtime_error("Nan encountered in position");
@@ -301,7 +317,9 @@ void fluid_sim::integrateMovements() {
         }
     }
 }
+#pragma endregion
 
+#pragma region MULTI-THREADED COMPUTATION
 void fluid_sim::calcDensityAndPressureMultithread() {
     // clang-format off
     #pragma omp parallel
@@ -448,6 +466,7 @@ void fluid_sim::integrateMovementsMultithread() {
     }
     // clang-format on
 }
+#pragma endregion
 
 void fluid_sim::update() {
     for(int i = 0; i < num_iterations; i++) {

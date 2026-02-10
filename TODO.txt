@@ -3,3 +3,4 @@
 [✓] implement better multithread exception handling using reduction
 [ ] visualize velocity with color
 [ ] implement better interpolation
+[ ] implement clipping resolution when enabling concurrent calculations

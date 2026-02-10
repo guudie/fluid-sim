@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <libconfig.h++>
 #include "glm/glm.hpp"
+#include "glm/gtx/hash.hpp"
 
 struct point;
 
@@ -24,9 +25,10 @@ private:
         NAN_DENSITY
     };
 
-    std::unordered_set<point*>** grid;
+    std::unordered_set<point*>** grid = nullptr;
+    std::unordered_set<glm::vec2, std::hash<glm::vec2>> occupiedPos;
     std::vector<point*> points;
-    omp_lock_t** gridLock;
+    omp_lock_t** gridLock = nullptr;
     renderer* _renderer = nullptr;
     mouse* _mouse = nullptr;
     ODESolver* _integrator = nullptr;
@@ -39,6 +41,7 @@ private:
     Uint32 currentTime;
     Uint32 tickDuration;
     bool showFrameTime = false;
+    bool resolveClipping = false;
 
     int generateCount = 0;
     int maxGenerateCount = 8;
