@@ -324,9 +324,7 @@ void fluid_sim::calcDensityAndPressureMultithread() {
     // clang-format off
     #pragma omp parallel
     {
-        multithread_exception mt_excpt_thread = NONE;
-
-        #pragma omp for collapse(2)
+        #pragma omp for collapse(2) reduction(max_mt_exception:mt_excpt)
         FOR_2D(int r = 0, r < gridDimY, r++,
                int c = 0, c < gridDimX, c++) {
             for(auto& p : grid[r][c]) {
@@ -345,20 +343,14 @@ void fluid_sim::calcDensityAndPressureMultithread() {
                         }
                     }
                 }
-                mt_excpt_thread = (isnan(p->density) && (mt_excpt_thread == NONE)) ? NAN_DENSITY : mt_excpt_thread;
 
+                if(mt_excpt == NONE && isnan(p->density)) mt_excpt = NAN_DENSITY;
+                
                 p->density = std::max(p0, p->density);
-
-                // pressure
                 p->pressure = K * (p->density - p0);
 
-                mt_excpt_thread = (isnan(p->pressure) && (mt_excpt_thread == NONE)) ? NAN_PRESSURE : mt_excpt_thread;
+                if(mt_excpt == NONE && isnan(p->pressure)) mt_excpt = NAN_PRESSURE;
             }
-        }
-
-        #pragma omp reduction(max:mt_excpt)
-        {
-            mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
     // clang-format on
@@ -368,9 +360,7 @@ void fluid_sim::calcAccelerationMultithread() {
     // clang-format off
     #pragma omp parallel
     {
-        multithread_exception mt_excpt_thread = NONE;
-
-        #pragma omp for collapse(2)
+        #pragma omp for collapse(2) reduction(max_mt_exception:mt_excpt)
         FOR_2D(int r = 0, r < gridDimY, r++,
                int c = 0, c < gridDimX, c++) {
             for(auto& p : grid[r][c]) {
@@ -401,14 +391,9 @@ void fluid_sim::calcAccelerationMultithread() {
                         p->acc -= p->pressure / (2.0f * p->density * p0) * W_spiky * (diff / r);
                     }
                 }
-                mt_excpt_thread = ((isnan(p->acc.x) || isnan(p->acc.y)) && (mt_excpt_thread == NONE)) ? NAN_ACC : mt_excpt_thread;
+                if(mt_excpt == NONE && (isnan(p->acc.x) || isnan(p->acc.y))) mt_excpt = NAN_ACC;
                 // capMagnitude(p->acc, 0.5f);
             }
-        }
-
-        #pragma omp reduction(max:mt_excpt)
-        {
-            mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
     // clang-format on
@@ -418,9 +403,7 @@ void fluid_sim::integrateMovementsMultithread() {
     // clang-format off
     #pragma omp parallel
     {
-        multithread_exception mt_excpt_thread = NONE;
-
-        #pragma omp for
+        #pragma omp for reduction(max_mt_exception:mt_excpt)
         for(auto& p : points) {
             // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
@@ -436,13 +419,13 @@ void fluid_sim::integrateMovementsMultithread() {
             _integrator->integrateStep2(p->pos, p->vel, dt);
             resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
 
-            mt_excpt_thread = ((isnan(p->pos.x) || isnan(p->pos.y)) && (mt_excpt_thread == NONE)) ? NAN_POS : mt_excpt_thread;
+            if(mt_excpt == NONE && (isnan(p->pos.x) || isnan(p->pos.y))) mt_excpt = NAN_POS;
 
             glm::ivec2 newIdx = { p->pos.x / cellSize, p->pos.y / cellSize };
             if(p->gridIdx != newIdx) {
-                if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY) {
-                    mt_excpt_thread = IDX_OUT_OF_RANGE;
-                } else {
+                if(newIdx.x < 0 || newIdx.x >= gridDimX || newIdx.y < 0 || newIdx.y >= gridDimY)
+                    mt_excpt = IDX_OUT_OF_RANGE;
+                else {
                     // erase p from grid[p->gridIdx.y][p->gridIdx.x]
                     omp_set_lock(&gridLock[p->gridIdx.y][p->gridIdx.x]);
                     grid[p->gridIdx.y][p->gridIdx.x].erase(p);
@@ -457,11 +440,6 @@ void fluid_sim::integrateMovementsMultithread() {
                     p->gridIdx = newIdx;
                 }
             }
-        }
-
-        #pragma omp reduction(max:mt_excpt)
-        {
-            mt_excpt = mt_excpt_thread > mt_excpt ? mt_excpt_thread : mt_excpt;
         }
     }
     // clang-format on
@@ -478,16 +456,13 @@ void fluid_sim::update() {
 
 void fluid_sim::updateMultithread() {
     for(int i = 0; i < num_iterations; i++) {
-        calcDensityAndPressureMultithread();
-        if(mt_excpt != NONE)
+        if(calcDensityAndPressureMultithread(); mt_excpt != NONE)
             throw std::runtime_error(getMultithreadError());
 
-        calcAccelerationMultithread();
-        if(mt_excpt != NONE)
+        if(calcAccelerationMultithread(); mt_excpt != NONE)
             throw std::runtime_error(getMultithreadError());
 
-        integrateMovementsMultithread();
-        if(mt_excpt != NONE)
+        if(integrateMovementsMultithread(); mt_excpt != NONE)
             throw std::runtime_error(getMultithreadError());
     }
 }

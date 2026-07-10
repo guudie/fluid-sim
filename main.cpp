@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     const int width = 512, height = 512;
     bool multithread = getOption(argc, argv, 'm');
     bool frametime = getOption(argc, argv, 'f');
-    bool velColor = getOption(argc, argv, 'c');
+    bool velColor [[maybe_unused]] = getOption(argc, argv, 'c');
 
     if(multithread)
         std::cout << "Multithreading enabled\nNo. of parallel threads: " << omp_get_max_threads() << std::endl;

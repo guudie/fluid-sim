@@ -25,6 +25,11 @@ private:
         NAN_DENSITY
     };
 
+    // clang-format off
+    #pragma omp declare reduction(max_mt_exception : multithread_exception : omp_out = omp_in > omp_out ? omp_in : omp_out) \
+            initializer(omp_priv = multithread_exception::NONE)
+    // clang-format on
+
     std::unordered_set<point*>** grid = nullptr;
     std::unordered_set<glm::vec2, std::hash<glm::vec2>> occupiedPos;
     std::vector<point*> points;
@@ -48,7 +53,7 @@ private:
     float dt = 1.0f;
     float radius;
     int num_iterations;
-    int max_particles;
+    size_t max_particles;
     float K;
     float h;
     float h2;
