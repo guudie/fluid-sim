@@ -1,4 +1,4 @@
-.PHONY: all app clean
+.PHONY: all app clean pack pack_r
 
 # --- toggles ----------------------------------------------------------------
 CONSOLE_OUTPUT = true
@@ -84,3 +84,10 @@ $(BIN)/app$(EXT): $(OBJS)
 	$(GCC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 -include $(DEPS)
+
+# --- misc -------------------------------------------------------------------
+pack:
+	$(MAKE) pack_r DEBUG=false
+
+pack_r: all
+	@7z u application.zip $(BIN)/app$(EXT)
