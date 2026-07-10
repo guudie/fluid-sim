@@ -90,4 +90,4 @@ pack:
 	$(MAKE) pack_r DEBUG=false
 
 pack_r: all
-	@7z u application.zip $(BIN)/app$(EXT)
+	@7z u application.zip ./$(BIN)/app$(EXT) config
