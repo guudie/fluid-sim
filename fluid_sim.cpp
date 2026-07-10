@@ -276,22 +276,25 @@ void fluid_sim::calcAcceleration() {
 
 void fluid_sim::integrateMovements() {
     for(auto& p : points) {
-        // _integrator.integrate(p->pos, p->vel, p->acc, dt);
-
         if(resolveClipping)
             occupiedPos.erase(p->pos);
 
-        // calculate velocity
-        if(_mouse->getLB()) {
-            glm::vec2 toMouse = _mouse->getPos() - p->pos;
-            if(glm::dot(toMouse, toMouse) < 32 * 32)
-                p->vel += mouse_coeff * _mouse->getDiff();
-        }
-        _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
-        capMagnitude(p->vel, max_vel);
+        // whole integration vs. segmented integration; either or
+        {
+            // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
-        _integrator->integrateStep2(p->pos, p->vel, dt);
-        resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
+            // calculate velocity
+            if(_mouse->getLB()) {
+                glm::vec2 toMouse = _mouse->getPos() - p->pos;
+                if(glm::dot(toMouse, toMouse) < 32 * 32)
+                    p->vel += mouse_coeff * _mouse->getDiff();
+            }
+            _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
+            capMagnitude(p->vel, max_vel);
+
+            _integrator->integrateStep2(p->pos, p->vel, dt);
+            resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
+        }
 
         if(resolveClipping) {
             // try at most 5 times
@@ -405,19 +408,22 @@ void fluid_sim::integrateMovementsMultithread() {
     {
         #pragma omp for reduction(max_mt_exception:mt_excpt)
         for(auto& p : points) {
-            // _integrator.integrate(p->pos, p->vel, p->acc, dt);
+            // whole integration vs. segmented integration; either or
+            {
+                // _integrator.integrate(p->pos, p->vel, p->acc, dt);
 
-            // calculate velocity
-            if(_mouse->getLB()) {
-                glm::vec2 toMouse = _mouse->getPos() - p->pos;
-                if(glm::dot(toMouse, toMouse) < 32 * 32)
-                    p->vel += mouse_coeff * _mouse->getDiff();
+                // calculate velocity
+                if(_mouse->getLB()) {
+                    glm::vec2 toMouse = _mouse->getPos() - p->pos;
+                    if(glm::dot(toMouse, toMouse) < 32 * 32)
+                        p->vel += mouse_coeff * _mouse->getDiff();
+                }
+                _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
+                capMagnitude(p->vel, max_vel);
+
+                _integrator->integrateStep2(p->pos, p->vel, dt);
+                resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
             }
-            _integrator->integrateStep1(p->pos, p->vel, p->acc, dt);
-            capMagnitude(p->vel, max_vel);
-
-            _integrator->integrateStep2(p->pos, p->vel, dt);
-            resolveOutOfBounds(*p, _renderer->getWidth() - 1, _renderer->getHeight() - 1);
 
             if(mt_excpt == NONE && (isnan(p->pos.x) || isnan(p->pos.y))) mt_excpt = NAN_POS;
 
