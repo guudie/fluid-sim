@@ -1,13 +1,15 @@
-.PHONY: all app temp clean subdirs
+.PHONY: all app clean
 
 EXT =
 WINOPT =
 
 CONSOLE_OUTPUT = true
+BUILD = release
 
 DEBUG = false
 DEBUGFLAGS = -g0
 ifeq ($(DEBUG), true)
+	BUILD = debug
 	DEBUGFLAGS = -ggdb
 endif
 
@@ -17,8 +19,17 @@ ifeq ($(OS), Windows_NT)
 		WINOPT = -mconsole
 	endif
 endif
-SUBDIRS = ODE_solvers
-ARGS = -O2
+
+ODEDIR = ODE_solvers
+
+BASE_OBJDIR = obj
+BASE_BIN = bin
+OBJDIR = $(BASE_OBJDIR)/$(BUILD)
+BIN = $(BASE_BIN)/$(BUILD)
+
+ODE_OBJDIR = $(OBJDIR)/$(ODEDIR)
+
+ARGS = -O2 -Wall
 GCC = g++
 
 OMP = -fopenmp
@@ -31,32 +42,64 @@ ifeq ($(STATIC_LINK), true)
 endif
 CFLAGS = $(WINOPT) $(OMP) -O2 -Wall -lm $(LIBS)
 
-all: subdirs renderer.o mouse.o utils.o fluid_sim.o main.o app$(EXT)
+# Common compile flags shared by every translation unit.
+CXXFLAGS = $(ARGS) $(DEBUGFLAGS)
+
+OBJS = \
+	$(OBJDIR)/main.o \
+	$(OBJDIR)/renderer.o \
+	$(OBJDIR)/mouse.o \
+	$(OBJDIR)/utils.o \
+	$(OBJDIR)/fluid_sim.o \
+	$(ODE_OBJDIR)/ODESolver.o \
+	$(ODE_OBJDIR)/velocityVerlet.o \
+	$(ODE_OBJDIR)/verlet.o \
+	$(ODE_OBJDIR)/implicitEuler.o
+
+all: app
+app: $(BIN)/app$(EXT)
+
 clean:
-	-rm *.o *.exe; \
-	for dir in $(SUBDIRS); do \
-		$(MAKE) DEBUG=$(DEBUG) -C $$dir clean; \
-	done
+	-rm -r $(BASE_OBJDIR)/* $(BASE_BIN)/*
 
-subdirs:
-	for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir; \
-	done
+$(OBJDIR):
+	mkdir -p $(OBJDIR)
 
-renderer.o: renderer.h renderer.cpp
-	$(GCC) $(ARGS) $(DEBUGFLAGS) -c renderer.cpp -o renderer.o
+$(ODE_OBJDIR):
+	mkdir -p $(ODE_OBJDIR)
 
-mouse.o: mouse.h mouse.cpp
-	$(GCC) $(ARGS) $(DEBUGFLAGS) -c mouse.cpp -o mouse.o
+$(BIN):
+	mkdir -p $(BIN)
 
-utils.o: utils.h utils.cpp global.h
-	$(GCC) $(ARGS) $(DEBUGFLAGS) $(LCFGFLAG) -c utils.cpp -o utils.o
+# --- main sources -----------------------------------------------------------
+$(OBJDIR)/renderer.o: renderer.h renderer.cpp | $(OBJDIR)
+	$(GCC) $(CXXFLAGS) -c renderer.cpp -o $@
 
-fluid_sim.o: fluid_sim.h fluid_sim.cpp renderer.h mouse.h utils.h ./ODE_solvers/ODESolver.h
-	$(GCC) $(ARGS) $(DEBUGFLAGS) $(LCFGFLAG) $(OMP) -c fluid_sim.cpp -o fluid_sim.o
+$(OBJDIR)/mouse.o: mouse.h mouse.cpp | $(OBJDIR)
+	$(GCC) $(CXXFLAGS) -c mouse.cpp -o $@
 
-main.o: main.cpp renderer.h mouse.h utils.h fluid_sim.h ./ODE_solvers/implicitEuler.h global.h
-	$(GCC) $(ARGS) $(DEBUGFLAGS) $(LCFGFLAG) $(OMP) -c main.cpp -o main.o
+$(OBJDIR)/utils.o: utils.h utils.cpp global.h | $(OBJDIR)
+	$(GCC) $(CXXFLAGS) $(LCFGFLAG) -c utils.cpp -o $@
 
-app$(EXT): main.o renderer.o mouse.o utils.o fluid_sim.o ./ODE_solvers/ode_joined.o
+$(OBJDIR)/fluid_sim.o: fluid_sim.h fluid_sim.cpp renderer.h mouse.h utils.h $(ODEDIR)/ODESolver.h | $(OBJDIR)
+	$(GCC) $(CXXFLAGS) $(LCFGFLAG) $(OMP) -c fluid_sim.cpp -o $@
+
+$(OBJDIR)/main.o: main.cpp renderer.h mouse.h utils.h fluid_sim.h $(ODEDIR)/implicitEuler.h global.h | $(OBJDIR)
+	$(GCC) $(CXXFLAGS) $(LCFGFLAG) $(OMP) -c main.cpp -o $@
+
+# --- ODE solvers ------------------------------------------------------------
+$(ODE_OBJDIR)/ODESolver.o: $(ODEDIR)/ODESolver.h $(ODEDIR)/ODESolver.cpp | $(ODE_OBJDIR)
+	$(GCC) $(CXXFLAGS) -c $(ODEDIR)/ODESolver.cpp -o $@
+
+$(ODE_OBJDIR)/velocityVerlet.o: $(ODEDIR)/ODESolver.h $(ODEDIR)/velocityVerlet.h $(ODEDIR)/velocityVerlet.cpp | $(ODE_OBJDIR)
+	$(GCC) $(CXXFLAGS) -c $(ODEDIR)/velocityVerlet.cpp -o $@
+
+$(ODE_OBJDIR)/verlet.o: $(ODEDIR)/ODESolver.h $(ODEDIR)/verlet.h $(ODEDIR)/verlet.cpp | $(ODE_OBJDIR)
+	$(GCC) $(CXXFLAGS) -c $(ODEDIR)/verlet.cpp -o $@
+
+$(ODE_OBJDIR)/implicitEuler.o: $(ODEDIR)/ODESolver.h $(ODEDIR)/implicitEuler.h $(ODEDIR)/implicitEuler.cpp | $(ODE_OBJDIR)
+	$(GCC) $(CXXFLAGS) -c $(ODEDIR)/implicitEuler.cpp -o $@
+
+# --- link -------------------------------------------------------------------
+$(BIN)/app$(EXT): $(OBJS) | $(BIN)
 	$(GCC) $(DEBUGFLAGS) -o $@ $^ $(CFLAGS)
