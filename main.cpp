@@ -15,6 +15,21 @@ const char* global::argOpts = "mfc";
 const char* global::generalConfigPath = "config/general.cfg";
 const char* global::utilsConfigPath = "config/utils.cfg";
 
+bool readConfigs(libconfig::Config& globCfg, libconfig::Config& utilCfg) try {
+    globCfg.readFile(global::generalConfigPath);
+    utilCfg.readFile(global::utilsConfigPath);
+    return true;
+} catch(const libconfig::FileIOException& fioex) {
+    std::cout << "I/O error while reading file." << std::endl;
+    return false;
+} catch(const libconfig::ParseException& pex) {
+    std::cout << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError();
+    return false;
+} catch(std::exception& e) {
+    std::cout << e.what() << std::endl;
+    return false;
+}
+
 int main(int argc, char** argv) {
     const int width = 512, height = 512;
     bool multithread = getOption(argc, argv, 'm');
@@ -25,13 +40,8 @@ int main(int argc, char** argv) {
         std::cout << "Multithreading enabled\nNo. of parallel threads: " << omp_get_max_threads() << std::endl;
 
     libconfig::Config cfg;
-    try {
-        parseConfig(cfg, global::generalConfigPath);
-        utConf::parseConfig();
-    } catch(std::exception& e) {
-        std::cout << e.what() << std::endl;
+    if(!readConfigs(cfg, utConf::cfg))
         return EXIT_FAILURE;
-    }
 
     glm::vec2 G;
     G.x = cfg.lookup("gravity.x");
@@ -44,7 +54,7 @@ int main(int argc, char** argv) {
     fluid_sim* sim = new fluid_sim();
     try {
         sim->setup(cfg, width, height, (ODESolver*)&_integrator);
-        utConf::readConfig();
+        utConf::setup();
     } catch(std::exception& e) {
         std::cout << e.what() << std::endl;
         return EXIT_FAILURE;

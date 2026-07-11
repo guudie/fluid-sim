@@ -1,4 +1,4 @@
-.PHONY: all app clean pack pack_r
+.PHONY: all app clean pack pack_r run
 
 # --- toggles ----------------------------------------------------------------
 CONSOLE_OUTPUT = true
@@ -91,3 +91,6 @@ pack:
 
 pack_r: all
 	@7z u application.zip ./$(BIN)/app$(EXT) config
+
+run: all
+	$(BIN)/app$(EXT)

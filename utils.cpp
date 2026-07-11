@@ -11,11 +11,7 @@ libconfig::Config utilsConfig::cfg;
 float utilsConfig::bounceCoeff;
 float utilsConfig::groundBounceCoeff;
 
-void utilsConfig::parseConfig() {
-    ::parseConfig(cfg, global::utilsConfigPath);
-}
-
-void utilsConfig::readConfig() {
+void utilsConfig::setup() {
     bounceCoeff = cfg.lookup("bounce_coeff");
     groundBounceCoeff = cfg.lookup("ground_bounce_coeff");
 }
@@ -31,18 +27,6 @@ bool getOption(int argc, char** argv, char opt) {
         parsed = true;
     }
     return opt_set.find(opt) != opt_set.end();
-}
-
-void parseConfig(libconfig::Config& cfg, const char* configPath) {
-    try {
-        cfg.readFile(configPath);
-    } catch(const libconfig::FileIOException& fioex) {
-        throw std::runtime_error("I/O error while reading file.");
-    } catch(const libconfig::ParseException& pex) {
-        std::stringstream ss;
-        ss << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError();
-        throw std::runtime_error(ss.str());
-    }
 }
 
 void resolveOutOfBounds(point& p, int w, int h) {

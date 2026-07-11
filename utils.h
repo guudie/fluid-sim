@@ -25,13 +25,11 @@ public:
     static float bounceCoeff;
     static float groundBounceCoeff;
 
-    static void parseConfig();
-    static void readConfig();
+    static void setup();
 };
 
 typedef utilsConfig utConf;
 
 bool getOption(int argc, char** argv, char opt);
-void parseConfig(libconfig::Config& cfg, const char* configPath);
 void resolveOutOfBounds(point& p, int w, int h);
 void resolveVelocity(const glm::vec2& p, glm::vec2& v, const int& height);
